@@ -1,6 +1,6 @@
-# ADempiere Template Project
+# ADempiere gRPC Utils
 
-Fill it with a comment about project.
+This project just add some libraries for start a gRPC easy with ADempiere.
 
 ## Requirements
 - [JDK 11 or later](https://adoptium.net/)
@@ -8,26 +8,16 @@ Fill it with a comment about project.
 
 
 ### Packages Names
-you should change the follows packages for your own implementation, just change the word `template` by your implementation
+The prefix for package names is `org.spin.service.grpc`, a complete list the follows: 
 
-```Java
-org.spin.template.model.validator
-org.spin.template.setup
-org.spin.template.util
-```
 
-### Model Validators
-Change the `org.spin.template.model.validator.Validator` by your implementation, example: `org.spin.template.model.validator.MyOwnFunctionality`
-
-### Model Deploy class
-Change the `org.spin.template.setup.Deploy` by your implementation, example: `org.spin.template.setup.MyOwnSetupForDeploy`
-
-### Model Util class for core changes
-Change the `org.spin.template.util.Changes` by your implementation, example: `org.spin.template.util.MyOwnChanges`
+- `org.spin.service.grpc.authentication`: Manage Authentication and authorization
+- `org.spin.service.grpc.context`: All related to ADempiere context multi-thread
+- `org.spin.template.util`: Just a util class for convert values from and to gRPC stub
 
 ## Binary Project
 
-You can get all binaries from github [here](https://central.sonatype.com/artifact/io.github.adempiere/adempiere-template-project/1.0.0).
+You can get all binaries from github [here](https://central.sonatype.com/artifact/io.github.adempiere/adempiere-grpc-utils/1.0.0).
 
 All contruction is from github actions
 
@@ -44,13 +34,13 @@ Is very easy.
 - Gradle
 
 ```Java
-implementation 'io.github.adempiere:adempiere-template-project:1.0.0'
+implementation 'io.github.adempiere:adempiere-grpc-utils:1.0.0'
 ```
 
 - SBT
 
 ```
-libraryDependencies += "io.github.adempiere" % "adempiere-template-project" % "1.0.0"
+libraryDependencies += "io.github.adempiere" % "adempiere-grpc-utils" % "1.0.0"
 ```
 
 - Apache Maven
@@ -58,7 +48,7 @@ libraryDependencies += "io.github.adempiere" % "adempiere-template-project" % "1
 ```
 <dependency>
     <groupId>io.github.adempiere</groupId>
-    <artifactId>adempiere-template-project</artifactId>
+    <artifactId>adempiere-grpc-utils</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```

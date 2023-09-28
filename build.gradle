@@ -7,6 +7,7 @@ plugins {
 sourceCompatibility = 1.11
 def baseVersion = '3.9.4'
 def baseGroupId = 'io.github.adempiere'
+def grpcVersion = '1.53.0'
 
 repositories {
     mavenLocal()
@@ -26,8 +27,15 @@ dependencies {
             '*.jar'
         ]
     )
+    api "io.grpc:grpc-netty-shaded:${grpcVersion}"
+	api 'com.google.protobuf:protobuf-java:3.24.3'
+	api 'com.google.protobuf:protobuf-java-util:3.24.3'
+	api 'io.jsonwebtoken:jjwt-api:0.11.2'
+    api 'io.jsonwebtoken:jjwt-impl:0.11.2'
+    api 'io.jsonwebtoken:jjwt-jackson:0.11.2'
     //	ADempiere Core
     api "${baseGroupId}:base:${baseVersion}"
+   	api "${baseGroupId}:adempiere-jwt-token:1.0.2"
 }
 
 sourceSets {
@@ -51,7 +59,7 @@ version = System.getenv("ADEMPIERE_LIBRARY_VERSION") ?: "local-1.0.0"
 jar {
 	manifest {
 		attributes(
-			"Implementation-Title": "ADempiere Template Management",
+			"Implementation-Title": "ADempiere gRPC Utils",
 			"Implementation-Version": version,
 			"EntityType": entityType
 		)
@@ -73,12 +81,12 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
 			groupId = group
-			artifactId = 'adempiere-template-project'
+			artifactId = 'adempiere-grpc-utils'
 			version = version
            	from components.java
            	pom {
-                name = 'ADempiere Template Project'
-                description = 'Fill it with project description'
+                name = 'ADempiere gRPC Utils'
+                description = 'Utils classes for start a gRPC easy using ADempiere'
                 url = 'http://adempiere.io/'
                 licenses {
                     license {
@@ -94,9 +102,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/adempiere/adempiere-template-project.git'
-                    developerConnection = 'scm:git:ssh://github.com/adempiere/adempiere-template-project.git'
-                    url = 'http://github.com/adempiere/adempiere-template-project'
+                    connection = 'scm:git:git://github.com/adempiere/adempiere-grpc-utils.git'
+                    developerConnection = 'scm:git:ssh://github.com/adempiere/adempiere-grpc-utils.git'
+                    url = 'http://github.com/adempiere/adempiere-grpc-utils'
                 }
             }
 		}
