@@ -39,3 +39,5 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PGP_PASSPHRASE }}
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_TOKEN }}
           ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USERNAME }}
+          ADEMPIERE_BASE_GROUP: ${{ secrets.ADEMPIERE_BASE_GROUP }}
+          ADEMPIERE_PUBLISH_GROUP: ${{ secrets.ADEMPIERE_PUBLISH_GROUP }}
