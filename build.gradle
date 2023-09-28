@@ -6,7 +6,7 @@ plugins {
 
 sourceCompatibility = 1.11
 def baseVersion = '3.9.4'
-def baseGroupId = 'io.github.adempiere'
+def baseGroupId = System.getenv("ADEMPIERE_BASE_GROUP") ?: 'io.github.adempiere'
 def grpcVersion = '1.53.0'
 
 repositories {
@@ -53,7 +53,7 @@ java {
 
 
 def entityType = 'D'
-group = "io.github.adempiere"
+group = System.getenv("ADEMPIERE_PUBLISH_GROUP") ?: "io.github.adempiere"
 version = System.getenv("ADEMPIERE_LIBRARY_VERSION") ?: "local-1.0.0"
 
 jar {
