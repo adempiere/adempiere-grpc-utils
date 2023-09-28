@@ -5,7 +5,7 @@ plugins {
 }
 
 sourceCompatibility = 1.11
-def baseVersion = '3.9.4'
+def baseVersion = System.getenv("ADEMPIERE_BASE_VERSION") ?: '3.9.4'
 def baseGroupId = System.getenv("ADEMPIERE_BASE_GROUP") ?: 'io.github.adempiere'
 def grpcVersion = '1.53.0'
 

@@ -43,4 +43,5 @@ jobs:
         env:
           ADEMPIERE_LIBRARY_VERSION: 'build'
           ADEMPIERE_BASE_GROUP: ${{ secrets.ADEMPIERE_BASE_GROUP }}
+          ADEMPIERE_BASE_VERSION: ${{ secrets.ADEMPIERE_BASE_VERSION }}
           ADEMPIERE_PUBLISH_GROUP: ${{ secrets.ADEMPIERE_PUBLISH_GROUP }}
