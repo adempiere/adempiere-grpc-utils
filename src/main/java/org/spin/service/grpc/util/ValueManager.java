@@ -10,7 +10,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,           *
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.                            *
  * For the text or an alternative of this public license, you may reach us           *
- * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, S.A. All Rights Reserved. *
+ * Copyright (C) 2012-2023 E.R.P. Consultores y Asociados, S.A. All Rights Reserved. *
  * Contributor(s): Yamel Senih www.erpya.com                                         *
  *************************************************************************************/
 package org.spin.service.grpc.util;
@@ -239,10 +239,10 @@ public class ValueManager {
 		Instant epochDate = Instant.ofEpochSecond(dateValue.getSeconds(), dateValue.getNanos());
 		return new Timestamp(Date.from(epochDate).getTime());
 	}
-	
+
 	/**
 	 * Get Date from a value
-	 * @param value
+	 * @param dateValue
 	 * @return
 	 */
 	public static Timestamp getDateFromValue(Value dateValue) {
@@ -270,7 +270,7 @@ public class ValueManager {
 		}
 		return convertStringToDate(validValue);
 	}
-	
+
 	/**
 	 * Get String from a value
 	 * @param value
@@ -334,10 +334,7 @@ public class ValueManager {
 			return builderValue;
 		}
 		//	Validate values
-		if(isLookup(referenceId)
-				|| DisplayType.isID(referenceId)) {
-			return getValueFromObject(value);
-		} else if(DisplayType.Integer == referenceId) {
+		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
 			Integer integerValue = null;
 			if(value instanceof Integer) {
 				integerValue = (Integer) value;
@@ -377,6 +374,8 @@ public class ValueManager {
 			return getValueFromDate((Timestamp) value);
 		} else if(DisplayType.isText(referenceId)) {
 			return getValueFromString((String) value);
+		} else if (DisplayType.List == referenceId) {
+			return getValueFromObject(value);
 		} else if (DisplayType.Button == referenceId) {
 			if (value instanceof Integer) {
 				return getValueFromInteger((Integer) value);
@@ -825,4 +824,5 @@ public class ValueManager {
 		}
 		return convertedValue;
 	}
+
 }
