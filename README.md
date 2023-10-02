@@ -13,7 +13,7 @@ The prefix for package names is `org.spin.service.grpc`, a complete list the fol
 
 - `org.spin.service.grpc.authentication`: Manage Authentication and authorization
 - `org.spin.service.grpc.context`: All related to ADempiere context multi-thread
-- `org.spin.template.util`: Just a util class for convert values from and to gRPC stub
+- `org.spin.service.grpc.util`: Just a util class for convert values from and to gRPC stub
 
 ## Binary Project
 
