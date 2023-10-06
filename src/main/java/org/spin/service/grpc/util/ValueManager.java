@@ -22,7 +22,8 @@ import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -236,8 +237,8 @@ public class ValueManager {
 		if(dateValue == null) {
 			return null;
 		}
-		Instant epochDate = Instant.ofEpochSecond(dateValue.getSeconds(), dateValue.getNanos());
-		return new Timestamp(Date.from(epochDate).getTime());
+		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(dateValue.getSeconds(), dateValue.getNanos(), ZoneOffset.UTC);
+		return Timestamp.valueOf(dateTime);
 	}
 
 	/**
