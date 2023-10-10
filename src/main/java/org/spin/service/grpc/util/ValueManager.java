@@ -17,6 +17,7 @@ package org.spin.service.grpc.util;
 
 import static com.google.protobuf.util.Timestamps.fromMillis;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -43,6 +44,9 @@ import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
@@ -451,7 +455,35 @@ public class ValueManager {
 		}
 		return displayedValue;
 	}
-	
+
+	/**
+	 * JSON as string to Map<key, value>
+	 * Ej: `{"AD_Field_ID":123,"AD_Column_ID":345}`
+	 * @param jsonValues
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> convertJsonStringToMap(String jsonValues) {
+		Map<String, Object> fillValues = new HashMap<String, Object>();
+		if (Util.isEmpty(jsonValues, true)) {
+			return fillValues;
+		}
+		try {
+			ObjectMapper fileMapper = new ObjectMapper();
+			fillValues = fileMapper.readValue(
+				jsonValues,
+				HashMap.class
+			);
+		} catch (JsonMappingException e) {
+			e.printStackTrace();
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return fillValues;
+	}
+
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
 	 * @param values
