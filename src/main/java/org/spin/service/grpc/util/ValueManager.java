@@ -234,17 +234,21 @@ public class ValueManager {
 		}
 		return new BigDecimal(validValue);
 	}
-	
+
 	/**
 	 * Get Date from value
 	 * @param dateValue
 	 * @return
 	 */
 	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
-		if(dateValue == null) {
+		if(dateValue == null || dateValue.isInitialized() || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
 			return null;
 		}
-		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(dateValue.getSeconds(), dateValue.getNanos(), ZoneOffset.UTC);
+		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(
+			dateValue.getSeconds(),
+			dateValue.getNanos(),
+			ZoneOffset.UTC
+		);
 		return Timestamp.valueOf(dateTime);
 	}
 
