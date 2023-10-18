@@ -241,7 +241,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
-		if(dateValue == null || dateValue.isInitialized() || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
+		if(dateValue == null || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
 			return null;
 		}
 		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(
