@@ -79,7 +79,7 @@ public class ValueManager {
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
-			return getValueFromDecimal((BigDecimal) value);
+			return getValueFromBigDecimal((BigDecimal) value);
 		} else if (value instanceof Integer) {
 			return getValueFromInteger((Integer)value);
 		} else if (value instanceof String) {
@@ -179,19 +179,28 @@ public class ValueManager {
 	
 	/**
 	 * Get value from big decimal
+	 * @deprecated {@link #getValueFromBigDecimal()}
 	 * @param value
 	 * @return
 	 */
 	public static Value.Builder getValueFromDecimal(BigDecimal value) {
 		return getDecimalFromBigDecimal(value);
 	}
-	
 	/**
-	 * Get decimal from big decimal
+	 * Get value from big decimal
+	 * @deprecated {@link #getValueFromBigDecimal()}
 	 * @param value
 	 * @return
 	 */
 	public static Value.Builder getDecimalFromBigDecimal(BigDecimal value) {
+		return getDecimalFromBigDecimal(value);
+	}
+	/**
+	 * Get Value object from BigDecimal
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getValueFromBigDecimal(BigDecimal value) {
 		if (value == null) {
 			return Value.newBuilder();
 		}
@@ -200,39 +209,64 @@ public class ValueManager {
 		decimalValue.putFields(VALUE_KEY, Value.newBuilder().setStringValue(value.toPlainString()).build());
 		return Value.newBuilder().setStructValue(decimalValue);
 	}
-	
-	public static BigDecimal getBigDecimalFromDecimal(Value decimalValue) {
-		return getDecimalFromValue(decimalValue);
-	}
-	
+
 	/**
-	 * Get BigDecimal object from decimal
+	 * @deprecated {@link #getBigDecimalFromValue()}
+	 * @param decimalValue
+	 * @return
+	 */
+	public static BigDecimal getBigDecimalFromDecimal(Value decimalValue) {
+		return getBigDecimalFromValue(decimalValue);
+	}
+	/**
+	 * @deprecated {@link #getBigDecimalFromValue()}
 	 * @param decimalValue
 	 * @return
 	 */
 	public static BigDecimal getDecimalFromValue(Value decimalValue) {
+		return getBigDecimalFromValue(decimalValue);
+	}
+	/**
+	 * Get BigDecimal from Value object
+	 * @param decimalValue
+	 * @return
+	 */
+	public static BigDecimal getBigDecimalFromValue(Value decimalValue) {
 		if(decimalValue == null
 				|| decimalValue.hasNullValue()
-				|| !decimalValue.hasStringValue()) {
+				|| !(decimalValue.hasStringValue() || decimalValue.hasNumberValue())) {
 			return null;
 		}
 		Map<String, Value> values = decimalValue.getStructValue().getFieldsMap();
-		if(values == null) {
-			return null;
+		if(values != null && !values.isEmpty()) {
+			Value type = values.get(TYPE_KEY);
+			if (type != null && TYPE_DECIMAL.equals(type.getStringValue())) {
+				Value value = values.get(VALUE_KEY);
+				if (value != null) {
+					if (!Util.isEmpty(value.getStringValue(), false)) {
+						return new BigDecimal(
+							value.getStringValue()
+						);
+					}
+					if (value.hasNumberValue()) {
+						return BigDecimal.valueOf(
+							value.getNumberValue()
+						);
+					}
+				}
+			}
 		}
-		Value type = values.get(TYPE_KEY);
-		Value value = values.get(VALUE_KEY);
-		if(type == null
-				|| value == null) {
-			return null;
+		if (!Util.isEmpty(decimalValue.getStringValue(), false)) {
+			return new BigDecimal(
+				decimalValue.getStringValue()
+			);
 		}
-		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
-		String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
-		if(!validType.equals(TYPE_DECIMAL)
-				|| validValue.length() == 0) {
-			return null;
+		if (decimalValue.hasNumberValue()) {
+			return BigDecimal.valueOf(
+				decimalValue.getNumberValue()
+			);
 		}
-		return new BigDecimal(validValue);
+		return null;
 	}
 
 	/**
@@ -376,7 +410,7 @@ public class ValueManager {
 			} else {
 				bigDecimalValue = (BigDecimal) value;
 			}
-			return getValueFromDecimal(bigDecimalValue);
+			return getValueFromBigDecimal(bigDecimalValue);
 		} else if(DisplayType.YesNo == referenceId) {
 			if (value instanceof String) {
 				return getValueFromStringBoolean((String) value);
