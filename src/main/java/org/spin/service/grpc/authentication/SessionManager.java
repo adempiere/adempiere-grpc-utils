@@ -20,7 +20,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -71,6 +74,12 @@ public class SessionManager {
 	/**	Language */
 	private static CCache<String, String> languageCache = new CCache<String, String>(I_AD_Language.Table_Name, 30, 0);	//	no time-out
 	
+	private static final Map<String, Properties> sessionsContext = Collections.synchronizedMap(new Hashtable<>());
+
+	public static void revokeSession(String token) {
+		sessionsContext.remove(token);
+	}
+
 	/**
 	 * Get Default Country
 	 * @return
@@ -95,19 +104,18 @@ public class SessionManager {
 	public static String getDefaultLanguage(String language) {
 		MClient client = MClient.get(Env.getCtx());
 		String clientLanguage = client.getAD_Language();
-		if(!Util.isEmpty(clientLanguage)
-				&& Util.isEmpty(language)) {
+		if(!Util.isEmpty(clientLanguage, true) && Util.isEmpty(language, true)) {
 			return clientLanguage;
 		}
 		String defaultLanguage = language;
-		if(Util.isEmpty(language)) {
+		if(Util.isEmpty(language, true)) {
 			language = Language.AD_Language_en_US;
 		}
 		//	Using es / en instead es_VE / en_US
 		//	get default
 		if(language.length() == 2) {
 			defaultLanguage = languageCache.get(language);
-			if(!Util.isEmpty(defaultLanguage)) {
+			if(!Util.isEmpty(defaultLanguage, true)) {
 				return defaultLanguage;
 			}
 			defaultLanguage = DB.getSQLValueString(null, "SELECT AD_Language "
@@ -117,7 +125,7 @@ public class SessionManager {
 			//	Set language
 			languageCache.put(language, defaultLanguage);
 		}
-		if(Util.isEmpty(defaultLanguage)) {
+		if(Util.isEmpty(defaultLanguage, true)) {
 			defaultLanguage = Language.AD_Language_en_US;
 		}
 		//	Default return
@@ -130,7 +138,9 @@ public class SessionManager {
 	 * @param tokenValue
 	 */
 	public static Properties getSessionFromToken(String tokenValue) {
+		// Remove `Bearer` word from token
 		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
+
 		//	Validate if is token based
 		int userId = -1;
 		int roleId = -1;
@@ -202,7 +212,7 @@ public class SessionManager {
 		//	Warehouse / Org
 		Env.setContext (context, "#M_Warehouse_ID", warehouseId);
 		Env.setContext (context, "#AD_Session_ID", 0);
-		//  Client Info
+		//	Client Info
 		MClient client = MClient.get(context, role.getAD_Client_ID());
 		Env.setContext(context, "#AD_Client_ID", client.getAD_Client_ID());
 		Env.setContext(context, "#AD_Org_ID", organizationId);
@@ -226,13 +236,29 @@ public class SessionManager {
 	}
 	
 	private static String getSecretKey() {
+		// get SysConfig by client
 		String secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY, Env.getAD_Client_ID(Env.getCtx()));
-        if(Util.isEmpty(secretKey)) {
-        	throw new AdempiereException("@ECA52_JWT_SECRET_KEY@ @NotFound@");
-        }
-        return secretKey;
+		if(Util.isEmpty(secretKey, true)) {
+			// get SysConfig by system client
+			secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY);
+
+			// TODO: Add `JWT_SECRET_KEY` value with parameter
+
+			// get SysConfig by environment variable
+			if (Util.isEmpty(secretKey, true)) {
+				secretKey = System.getenv(("JWT_SECRET_KEY"));
+			}
+
+			// if(Util.isEmpty(secretKey, true)) {
+			// 	secretKey = SetupLoader.getInstance().getServer().getSecret_key();
+			// }
+		}
+		if(Util.isEmpty(secretKey, true)) {
+			throw new AdempiereException("@ECA52_JWT_SECRET_KEY@ @NotFound@");
+		}
+		return secretKey;
 	}
-	
+
 	/**
 	 * Create token as bearer
 	 * @param session
@@ -246,24 +272,30 @@ public class SessionManager {
 		if(sessionTimeout == 0) {
 			//	Default 24 hours
 			sessionTimeout = 86400000;
+			// sessionTimeout = SetupLoader.getInstance().getServer().getExpiration();
 		}
-		
+
 		byte[] keyBytes = Decoders.BASE64.decode(getSecretKey());
-        Key key = Keys.hmacShaKeyFor(keyBytes);
-        return Jwts.builder()
-        		.setId(String.valueOf(session.getAD_Session_ID()))
-        		.claim("AD_Client_ID", session.getAD_Client_ID())
-        		.claim("AD_Org_ID", session.getAD_Org_ID())
-        		.claim("AD_Role_ID", session.getAD_Role_ID())
-        		.claim("AD_User_ID", session.getCreatedBy())
-        		.claim("M_Warehouse_ID", warehouseId)
-        		.claim("AD_Language", language)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + sessionTimeout))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+		Key key = Keys.hmacShaKeyFor(keyBytes);
+		return Jwts.builder()
+			.setId(String.valueOf(session.getAD_Session_ID()))
+			.claim("AD_Client_ID", session.getAD_Client_ID())
+			.claim("AD_Org_ID", session.getAD_Org_ID())
+			.claim("AD_Role_ID", session.getAD_Role_ID())
+			.claim("AD_User_ID", session.getCreatedBy())
+			.claim("M_Warehouse_ID", warehouseId)
+			.claim("AD_Language", language)
+			.setIssuedAt(
+				new Date(System.currentTimeMillis())
+			)
+			.setExpiration(
+				new Date(System.currentTimeMillis() + sessionTimeout)
+			)
+			.signWith(key, SignatureAlgorithm.HS256)
+			.compact()
+		;
 	}
-	
+
 	/**
 	 * Get Session Timeout from user definition
 	 * @param user
@@ -277,19 +309,25 @@ public class SessionManager {
 			value = user.get_Value("ConnectionTimeout");
 		}
 		if(value == null) {
-			String sessionTimeoutAsString = MSysConfig.getValue("WEBUI_DEFAULT_TIMEOUT", Env.getAD_Client_ID(Env.getCtx()), 0);
+			String sessionTimeoutAsString = MSysConfig.getValue(
+				"WEBUI_DEFAULT_TIMEOUT",
+				Env.getAD_Client_ID(Env.getCtx()),
+				0
+			);
 			try {
 				if (!Util.isEmpty(sessionTimeoutAsString, true)) {
 					sessionTimeout = Long.parseLong(sessionTimeoutAsString);
 				}
 			} catch (Exception e) {
-//				log.severe(e.getLocalizedMessage());
+				// log.severe(e.getLocalizedMessage());
 			}
 		} else {
 			try {
-				sessionTimeout = Long.parseLong(String.valueOf(value));
+				sessionTimeout = Long.parseLong(
+					String.valueOf(value)
+				);
 			} catch (Exception e) {
-//				log.severe(e.getLocalizedMessage());
+				// log.severe(e.getLocalizedMessage());
 			}
 		}
 		return sessionTimeout;
@@ -342,13 +380,17 @@ public class SessionManager {
 	 * @return
 	 */
 	public static MADToken createSessionFromToken(String tokenValue) {
-		if(Util.isEmpty(tokenValue)) {
+		if(Util.isEmpty(tokenValue, true)) {
 			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
 		}
+		// Remove `Bearer` word from token
 		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
 		//	
 		try {
-			ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
+			ITokenGenerator generator = TokenGeneratorHandler.getInstance()
+				.getTokenGenerator(
+					MADTokenDefinition.TOKENTYPE_ThirdPartyAccess
+				);
 			if(generator == null) {
 				throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
 			}
@@ -368,14 +410,14 @@ public class SessionManager {
 			throw new AdempiereException(e);
 		}
 	}
-	
+
 	/**
 	 * Load default values for session
 	 * @param context
 	 * @param language
 	 */
 	public static void loadDefaultSessionValues(Properties context, String language) {
-		//  Client Info
+		//	Client Info
 		MClient client = MClient.get(context, Env.getContextAsInt(context, "#AD_Client_ID"));
 		Env.setContext(context, "#AD_Client_Name", client.getName());
 		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
@@ -414,18 +456,21 @@ public class SessionManager {
 	 * @return
 	 */
 	public static int getDefaultRoleId(int userId) {
+		if (userId < 0) {
+			return -1;
+		}
 		String sql = "SELECT ur.AD_Role_ID "
-				+ "FROM AD_User_Roles ur "
-				+ "INNER JOIN AD_Role AS r ON ur.AD_Role_ID = r.AD_Role_ID "
-				+ "WHERE ur.AD_User_ID = ? AND ur.IsActive = 'Y' "
-				+ "AND r.IsActive = 'Y' "
-				+ "AND ((r.IsAccessAllOrgs = 'Y' AND EXISTS(SELECT 1 FROM AD_Org AS o WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) AND o.IsActive = 'Y' AND o.IsSummary = 'N') ) "
-				+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess AS ro WHERE ro.AD_Role_ID = ur.AD_Role_ID AND ro.IsActive = 'Y') ) "
-				+ "OR (r.IsUseUserOrgAccess = 'Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess AS uo WHERE uo.AD_User_ID = ur.AD_User_ID AND uo.IsActive = 'Y') )) "
-				+ "ORDER BY COALESCE(ur.IsDefault,'N') DESC";
+			+ "FROM AD_User_Roles ur "
+			+ "INNER JOIN AD_Role AS r ON ur.AD_Role_ID = r.AD_Role_ID "
+			+ "WHERE ur.AD_User_ID = ? AND ur.IsActive = 'Y' "
+			+ "AND r.IsActive = 'Y' "
+			+ "AND ((r.IsAccessAllOrgs = 'Y' AND EXISTS(SELECT 1 FROM AD_Org AS o WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) AND o.IsActive = 'Y' AND o.IsSummary = 'N') ) "
+			+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess AS ro WHERE ro.AD_Role_ID = ur.AD_Role_ID AND ro.IsActive = 'Y') ) "
+			+ "OR (r.IsUseUserOrgAccess = 'Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess AS uo WHERE uo.AD_User_ID = ur.AD_User_ID AND uo.IsActive = 'Y') )) "
+			+ "ORDER BY COALESCE(ur.IsDefault,'N') DESC";
 		return DB.getSQLValue(null, sql, userId);
 	}
-	
+
 	/**
 	 * Get Default organization after login
 	 * @param roleId
@@ -433,32 +478,35 @@ public class SessionManager {
 	 * @return
 	 */
 	public static int getDefaultOrganizationId(int roleId, int userId) {
+		if (roleId < 0 && userId < 1) {
+			return -1;
+		}
 		String organizationSQL = "SELECT o.AD_Org_ID "
-				+ "FROM AD_Role r "
-				+ "INNER JOIN AD_Client c ON(c.AD_Client_ID = r.AD_Client_ID) "
-				+ "INNER JOIN AD_Org o ON(c.AD_Client_ID=o.AD_Client_ID OR o.AD_Org_ID=0) "
-				+ "WHERE r.AD_Role_ID=? "
-				+ " AND o.IsActive='Y' AND o.IsSummary='N'"
-				+ " AND (r.IsAccessAllOrgs='Y' "
-					+ "OR (r.IsUseUserOrgAccess='N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess ra WHERE ra.AD_Org_ID = o.AD_Org_ID AND ra.AD_Role_ID = r.AD_Role_ID AND ra.IsActive='Y')) "
-					+ "OR (r.IsUseUserOrgAccess='Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess ua WHERE ua.AD_Org_ID = o.AD_Org_ID AND ua.AD_User_ID = ? AND ua.IsActive='Y'))"
-					+ ") "
-				+ "ORDER BY o.AD_Org_ID DESC, o.Name";
+			+ "FROM AD_Role r "
+			+ "INNER JOIN AD_Client c ON(c.AD_Client_ID = r.AD_Client_ID) "
+			+ "INNER JOIN AD_Org o ON(c.AD_Client_ID=o.AD_Client_ID OR o.AD_Org_ID=0) "
+			+ "WHERE r.AD_Role_ID=? "
+			+ " AND o.IsActive='Y' AND o.IsSummary='N'"
+			+ " AND (r.IsAccessAllOrgs='Y' "
+				+ "OR (r.IsUseUserOrgAccess='N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess ra WHERE ra.AD_Org_ID = o.AD_Org_ID AND ra.AD_Role_ID = r.AD_Role_ID AND ra.IsActive='Y')) "
+				+ "OR (r.IsUseUserOrgAccess='Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess ua WHERE ua.AD_Org_ID = o.AD_Org_ID AND ua.AD_User_ID = ? AND ua.IsActive='Y'))"
+				+ ") "
+			+ "ORDER BY o.AD_Org_ID DESC, o.Name";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
 	}
 
 	/**
 	 *	Load Preferences into Context for selected client.
-	 *  <p>
-	 *  Sets Org info in context and loads relevant field from
+	 *	<p>
+	 *	Sets Org info in context and loads relevant field from
 	 *	- AD_Client/Info,
-	 *  - C_AcctSchema,
-	 *  - C_AcctSchema_Elements
+	 *	- C_AcctSchema,
+	 *	- C_AcctSchema_Elements
 	 *	- AD_Preference
-	 *  <p>
-	 *  Assumes that the context is set for #AD_Client_ID, #AD_User_ID, #AD_Role_ID
-	 *  @param context
-	 *  @return AD_Message of error (NoValidAcctInfo) or ""
+	 *	<p>
+	 *	Assumes that the context is set for #AD_Client_ID, #AD_User_ID, #AD_Role_ID
+	 *	@param context
+	 *	@return AD_Message of error (NoValidAcctInfo) or ""
 	 */
 	private static void loadPreferences(Properties context) {
 		if (context == null)
@@ -516,7 +564,7 @@ public class SessionManager {
 			MAcctSchema[] ass = MAcctSchema.getClientAcctSchema(Env.getCtx(), clientId);
 			if(ass != null && ass.length > 1) {
 				for(MAcctSchema as : ass) {
-					acctSchemaId  = MClientInfo.get(Env.getCtx(), clientId).getC_AcctSchema1_ID(); 			 
+					acctSchemaId = MClientInfo.get(Env.getCtx(), clientId).getC_AcctSchema1_ID();
 					if (as.getAD_OrgOnly_ID() != 0) {
 						if (as.isSkipOrg(orgId)) {
 							continue;
@@ -529,7 +577,7 @@ public class SessionManager {
 						}
 					}
 				}
-			}	
+			}
 
 			//	Accounting Elements
 			sql = "SELECT ElementType "
@@ -539,13 +587,14 @@ public class SessionManager {
 			pstmt = DB.prepareStatement(sql, null);
 			pstmt.setInt(1, acctSchemaId);
 			rs = pstmt.executeQuery();
-			while (rs.next())
+			while (rs.next()) {
 				Env.setContext(context, "$Element_" + rs.getString("ElementType"), "Y");
+			}
 			rs.close();
 			pstmt.close();
 
 			//	This reads all relevant window neutral defaults
-			//	overwriting superseeded ones.  Window specific is read in Mainain
+			//	overwriting superseeded ones. Window specific is read in Mainain
 			sql = "SELECT Attribute, Value, AD_Window_ID "
 				+ "FROM AD_Preference "
 				+ "WHERE AD_Client_ID IN (0, @#AD_Client_ID@)"
@@ -597,17 +646,18 @@ public class SessionManager {
 		}
 		//	Country
 		MCountry country = getDefaultCountry();
-		if(country != null) {
+		if(country != null && country.getC_Country_ID() > 0) {
 			Env.setContext(context, "#C_Country_ID", country.getC_Country_ID());
 		}
 		// Call ModelValidators afterLoadPreferences - teo_sarca FR [ 1670025 ]
 		ModelValidationEngine.get().afterLoadPreferences(context);
 	}	//	loadPreferences
-	
+
+
 	/**
 	 *	Load Default Value for Table into Context.
-	 *  @param tableName table name
-	 *  @param columnName column name
+	 *	@param tableName table name
+	 *	@param columnName column name
 	 */
 	private static void loadDefault (Properties context, String tableName, String columnName) {
 		if (tableName.startsWith("AD_Window")
@@ -618,15 +668,21 @@ public class SessionManager {
 		//
 		String sql = "SELECT " + columnName + " FROM " + tableName	//	most specific first
 			+ " WHERE IsDefault='Y' AND IsActive='Y' ORDER BY AD_Client_ID DESC, AD_Org_ID DESC";
-		sql = MRole.getDefault(Env.getCtx(), false).addAccessSQL(sql, 
-			tableName, MRole.SQL_NOTQUALIFIED, MRole.SQL_RO);
+		sql = MRole.getDefault(context, false)
+			.addAccessSQL(
+				sql,
+				tableName,
+				MRole.SQL_NOTQUALIFIED,
+				MRole.SQL_RO
+			);
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
 			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
-			if (rs.next())
+			if (rs.next()) {
 				value = rs.getString(1);
+			}
 			rs.close();
 			pstmt.close();
 			pstmt = null;
@@ -637,12 +693,14 @@ public class SessionManager {
 			DB.close(rs, pstmt);
 		}
 		//	Set Context Value
-		if (value != null && value.length() != 0)
-		{
-			if (tableName.equals("C_DocType"))
+		if (!Util.isEmpty(value, true)) {
+			if (tableName.equals("C_DocType")) {
 				Env.setContext(context, "#C_DocTypeTarget_ID", value);
-			else
+			}
+			else {
 				Env.setContext(context, "#" + columnName, value);
+			}
 		}
 	}	//	loadDefault
+
 }

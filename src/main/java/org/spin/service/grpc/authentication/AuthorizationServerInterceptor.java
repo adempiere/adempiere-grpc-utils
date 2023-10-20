@@ -1,5 +1,5 @@
 /************************************************************************************
- * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, C.A.                     *
+ * Copyright (C) 2012-present E.R.P. Consultores y Asociados, C.A.                  *
  * Contributor(s): Yamel Senih ysenih@erpya.com                                     *
  * This program is free software: you can redistribute it and/or modify             *
  * it under the terms of the GNU General Public License as published by             *
@@ -14,7 +14,7 @@
  ************************************************************************************/
 package org.spin.service.grpc.authentication;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -30,16 +30,52 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
 
 	/**	Threaded key for context management	*/
 	public static final Context.Key<Object> SESSION_CONTEXT = Context.key("session_context");
+
 	/** Services/Methods allow request without Bearer token validation */
-	private static List<String> ALLOW_REQUESTS_WITHOUT_TOKEN = Arrays.asList(
-		""
-	);
-	
+	private List<String> ALLOW_REQUESTS_WITHOUT_TOKEN = new ArrayList<String>();
+
+	public void setAllowRequestsWithoutToken(List<String> allowRequestsWithoutToken) {
+		this.ALLOW_REQUESTS_WITHOUT_TOKEN = allowRequestsWithoutToken;
+	}
+
+	public void addAllowRequestWithoutToken(String request) {
+		this.ALLOW_REQUESTS_WITHOUT_TOKEN.add(request);
+	}
+
+	public List<String> getAllowRequestsWithoutToken() {
+		return this.ALLOW_REQUESTS_WITHOUT_TOKEN;
+	}
+
+
+	/**	Revoke session	*/
+	private List<String> REVOKE_TOKEN_SERVICES = new ArrayList<String>();
+
+	public void setRevokeTokenServices(List<String> allowRequestsWithoutToken) {
+		this.REVOKE_TOKEN_SERVICES = allowRequestsWithoutToken;
+	}
+
+	public void addRevokeTokenService(String request) {
+		if (this.REVOKE_TOKEN_SERVICES == null) {
+			this.ALLOW_REQUESTS_WITHOUT_TOKEN = new ArrayList<String>();
+		}
+		this.REVOKE_TOKEN_SERVICES.add(request);
+	}
+
+	public List<String> getRevokeTokenServices() {
+		return this.REVOKE_TOKEN_SERVICES;
+	}
+
+
+	AuthorizationServerInterceptor(List<String> allowRequestsWithoutToken) {
+		this.ALLOW_REQUESTS_WITHOUT_TOKEN = allowRequestsWithoutToken;
+	}
+
+
 	@Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
 		String callingMethod = serverCall.getMethodDescriptor().getFullMethodName();
 		// Bypass to ingore Bearer validation
-		if (ALLOW_REQUESTS_WITHOUT_TOKEN.contains(callingMethod)) {
+		if (this.ALLOW_REQUESTS_WITHOUT_TOKEN.contains(callingMethod)) {
 			return Contexts.interceptCall(Context.current(), serverCall, metadata, serverCallHandler);
 		}
 
@@ -52,6 +88,9 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
         } else {
             try {
             	Properties sessioncontext = SessionManager.getSessionFromToken(validToken);
+				if(this.REVOKE_TOKEN_SERVICES.contains(callingMethod)) {
+					SessionManager.revokeSession(validToken);
+				}
             	Context context = Context.current().withValue(SESSION_CONTEXT, sessioncontext);
                 return Contexts.interceptCall(context, serverCall, metadata, serverCallHandler);
             } catch (Exception e) {
