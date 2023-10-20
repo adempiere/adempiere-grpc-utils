@@ -66,10 +66,6 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
 	}
 
 
-	AuthorizationServerInterceptor(List<String> allowRequestsWithoutToken) {
-		this.ALLOW_REQUESTS_WITHOUT_TOKEN = allowRequestsWithoutToken;
-	}
-
 
 	@Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
@@ -95,6 +91,7 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
                 return Contexts.interceptCall(context, serverCall, metadata, serverCallHandler);
             } catch (Exception e) {
                 status = Status.UNAUTHENTICATED.withDescription(e.getMessage()).withCause(e);
+				e.printStackTrace();
             }
         }
 
