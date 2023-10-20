@@ -749,6 +749,7 @@ public class SessionManager {
 			pstmt = null;
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, tableName + " (" + sql + ")", e);
+			e.printStackTrace();
 			return;
 		} finally {
 			DB.close(rs, pstmt);
