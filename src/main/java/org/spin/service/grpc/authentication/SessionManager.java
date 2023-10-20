@@ -234,24 +234,35 @@ public class SessionManager {
 		String bearerToken = createBearerToken(session, warehouseId, Env.getAD_Language(context));
 		return bearerToken;
 	}
-	
-	private static String getSecretKey() {
+
+
+	/**
+	 * Get JWT Secrect Key generates with HMAC-SHA algorithms
+	 * @return
+	 */
+	private static String getJWT_SecretKey() {
 		// get SysConfig by client
-		String secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY, Env.getAD_Client_ID(Env.getCtx()));
+		String secretKey = MSysConfig.getValue(
+			JWTUtil.ECA52_JWT_SECRET_KEY,
+			Env.getAD_Client_ID(
+				Env.getCtx()
+			)
+		);
 		if(Util.isEmpty(secretKey, true)) {
 			// get SysConfig by system client
-			secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY);
+			secretKey = MSysConfig.getValue(
+				JWTUtil.ECA52_JWT_SECRET_KEY
+			);
 
 			// TODO: Add `JWT_SECRET_KEY` value with parameter
+			// if(Util.isEmpty(secretKey, true)) {
+			// 	secretKey = SetupLoader.getInstance().getServer().getSecret_key();
+			// }
 
 			// get SysConfig by environment variable
 			if (Util.isEmpty(secretKey, true)) {
 				secretKey = System.getenv(("JWT_SECRET_KEY"));
 			}
-
-			// if(Util.isEmpty(secretKey, true)) {
-			// 	secretKey = SetupLoader.getInstance().getServer().getSecret_key();
-			// }
 		}
 		if(Util.isEmpty(secretKey, true)) {
 			throw new AdempiereException("@ECA52_JWT_SECRET_KEY@ @NotFound@");
@@ -275,7 +286,9 @@ public class SessionManager {
 			// sessionTimeout = SetupLoader.getInstance().getServer().getExpiration();
 		}
 
-		byte[] keyBytes = Decoders.BASE64.decode(getSecretKey());
+		byte[] keyBytes = Decoders.BASE64.decode(
+			getJWT_SecretKey()
+		);
 		Key key = Keys.hmacShaKeyFor(keyBytes);
 		return Jwts.builder()
 			.setId(String.valueOf(session.getAD_Session_ID()))
