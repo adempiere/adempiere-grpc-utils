@@ -1,5 +1,5 @@
 /************************************************************************************
- * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, C.A.                     *
+ * Copyright (C) 2012-present E.R.P. Consultores y Asociados, C.A.                  *
  * Contributor(s): Yamel Senih ysenih@erpya.com                                     *
  * This program is free software: you can redistribute it and/or modify             *
  * it under the terms of the GNU General Public License as published by             *
@@ -27,9 +27,13 @@ public class TokenManager extends CallCredentials {
 
 	public static final String BEARER_TYPE = "Bearer";
 
-    public static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", ASCII_STRING_MARSHALLER);
-    public static final Context.Key<String> CLIENT_ID_CONTEXT_KEY = Context.key("clientId");
-    
+	public static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of(
+		"Authorization",
+		ASCII_STRING_MARSHALLER
+	);
+
+	public static final Context.Key<String> CLIENT_ID_CONTEXT_KEY = Context.key("clientId");
+
     private String value;
 
     public TokenManager(String value) {
@@ -53,7 +57,7 @@ public class TokenManager extends CallCredentials {
     public void thisUsesUnstableApi() {
         // noop
     }
-    
+
     public static String getTokenWithoutType(String token) {
 		if (token == null || token.trim().length() == 0) {
 			return "";

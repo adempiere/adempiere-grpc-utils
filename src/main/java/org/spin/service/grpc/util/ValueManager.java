@@ -175,8 +175,8 @@ public class ValueManager {
 		}
 		return fromMillis(value.getTime());
 	}
-	
-	
+
+
 	/**
 	 * Get value from big decimal
 	 * @deprecated {@link #getValueFromBigDecimal()}
@@ -184,7 +184,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromDecimal(BigDecimal value) {
-		return getDecimalFromBigDecimal(value);
+		return getValueFromBigDecimal(value);
 	}
 	/**
 	 * Get value from big decimal
@@ -193,7 +193,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getDecimalFromBigDecimal(BigDecimal value) {
-		return getDecimalFromBigDecimal(value);
+		return getValueFromBigDecimal(value);
 	}
 	/**
 	 * Get Value object from BigDecimal
