@@ -57,6 +57,9 @@ import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -67,13 +70,20 @@ import io.jsonwebtoken.security.Keys;
  * @author Yamel Senih, ysenih@erpya.com , http://www.erpya.com
  */
 public class SessionManager {
-	
-	/**	Session Context	*/
+
 	/**	Logger			*/
 	private static CLogger log = CLogger.getCLogger(SessionManager.class);
+
+	private static int userId = -1;
+	private static int roleId = -1;
+	private static int organizationId = -1;
+	private static int warehouseId = -1;
+	private static String language = "en_US";
+
 	/**	Language */
 	private static CCache<String, String> languageCache = new CCache<String, String>(I_AD_Language.Table_Name, 30, 0);	//	no time-out
-	
+
+	/**	Session Context	*/
 	private static final Map<String, Properties> sessionsContext = Collections.synchronizedMap(new Hashtable<>());
 
 	public static void revokeSession(String token) {
@@ -131,8 +141,27 @@ public class SessionManager {
 		//	Default return
 		return defaultLanguage;
 	}
-	
-	
+
+	public static void loadValuesWithClaims(Claims claimsBody) {
+		if (claimsBody == null || claimsBody.isEmpty()) {
+			throw new AdempiereException("Claims.Body @NotFound@");
+		}
+		userId = claimsBody.get("AD_User_ID", Integer.class);
+		roleId = claimsBody.get("AD_Role_ID", Integer.class);
+		organizationId = claimsBody.get("AD_Org_ID", Integer.class);
+		warehouseId = claimsBody.get("M_Warehouse_ID", Integer.class);
+		language = claimsBody.get("AD_Language", String.class);
+	}
+
+	public static void loadValuesWithMADToken(MADToken token) {
+		if (token == null || token.getAD_Token_ID() <= 0) {
+			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
+		}
+		userId = token.getAD_User_ID();
+		roleId = token.getAD_Role_ID();
+		organizationId = token.getAD_Org_ID();
+	}
+
 	/**
 	 * Load session from token
 	 * @param tokenValue
@@ -141,18 +170,24 @@ public class SessionManager {
 		// Remove `Bearer` word from token
 		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
 
+		boolean isNewSession = false;
+
 		//	Validate if is token based
-		int userId = -1;
-		int roleId = -1;
-		int organizationId = -1;
-		int warehouseId = -1;
-		String language = "en_US";
-		MADToken token = createSessionFromToken(tokenValue);
-		if(Optional.ofNullable(token).isPresent()) {
-			userId = token.getAD_User_ID();
-			roleId = token.getAD_Role_ID();
-			organizationId = token.getAD_Org_ID();
+		JwtParser parser = Jwts.parserBuilder().setSigningKey(
+			getJWT_SecretKey()
+		).build();
+		Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
+		Integer sessionId = Integer.parseInt(claims.getBody().getId());
+		if (sessionId != null && sessionId.intValue() > 0) {
+			loadValuesWithClaims(claims.getBody());
+		} else {
+			MADToken token = createSessionFromToken(tokenValue);
+			if(Optional.ofNullable(token).isPresent()) {
+				loadValuesWithMADToken(token);
+				isNewSession = true;
+			}
 		}
+
 		//	
 		if(organizationId < 0) {
 			organizationId = 0;
@@ -188,9 +223,11 @@ public class SessionManager {
 		//	User Info
 		Env.setContext(context, "#AD_User_ID", userId);
 		//	
-		MSession session = MSession.get(context, true);
-		if(session == null
-				|| session.getAD_Session_ID() <= 0) {
+		if (!isNewSession) {
+			Env.setContext (context, "#AD_Session_ID", sessionId);
+		}
+		MSession session = MSession.get(context, isNewSession);
+		if(session == null || session.getAD_Session_ID() <= 0) {
 			throw new AdempiereException("@AD_Session_ID@ @NotFound@");
 		}
 		//	Load preferences
