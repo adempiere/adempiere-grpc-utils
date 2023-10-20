@@ -241,7 +241,7 @@ public class SessionManager {
 	 * @return
 	 */
 	private static String getJWT_SecretKey() {
-		// get SysConfig by client
+		// get by SysConfig client
 		String secretKey = MSysConfig.getValue(
 			JWTUtil.ECA52_JWT_SECRET_KEY,
 			Env.getAD_Client_ID(
@@ -249,19 +249,14 @@ public class SessionManager {
 			)
 		);
 		if(Util.isEmpty(secretKey, true)) {
-			// get SysConfig by system client
-			secretKey = MSysConfig.getValue(
-				JWTUtil.ECA52_JWT_SECRET_KEY
-			);
-
 			// TODO: Add `JWT_SECRET_KEY` value with parameter
 			// if(Util.isEmpty(secretKey, true)) {
 			// 	secretKey = SetupLoader.getInstance().getServer().getSecret_key();
 			// }
 
-			// get SysConfig by environment variable
+			// get by environment variable
 			if (Util.isEmpty(secretKey, true)) {
-				secretKey = System.getenv(("JWT_SECRET_KEY"));
+				secretKey = System.getenv("JWT_SECRET_KEY");
 			}
 		}
 		if(Util.isEmpty(secretKey, true)) {
@@ -281,9 +276,25 @@ public class SessionManager {
 		MUser user = MUser.get(session.getCtx(), session.getCreatedBy());
 		long sessionTimeout = getSessionTimeout(user);
 		if(sessionTimeout == 0) {
+			// TODO: Add `JWT_EXPIRATION_TIME` value with parameter
+			// if(sessionTimeout == 0) {
+			// 	sessionTimeout = SetupLoader.getInstance().getServer().getExpiration();
+			// }
+
+			// get by environment variable
+			String timeout = System.getenv("JWT_EXPIRATION_TIME");
+			if(!Util.isEmpty(timeout, true)) {
+				try {
+					sessionTimeout = Long.parseLong(timeout);
+				} catch (Exception e) {
+					// log.severe(e.getLocalizedMessage());
+				}
+			}
+
 			//	Default 24 hours
-			sessionTimeout = 86400000;
-			// sessionTimeout = SetupLoader.getInstance().getServer().getExpiration();
+			if (sessionTimeout == 0) {
+				sessionTimeout = 86400000;
+			}
 		}
 
 		byte[] keyBytes = Decoders.BASE64.decode(
