@@ -286,18 +286,13 @@ public class SessionManager {
 			)
 		);
 		if(Util.isEmpty(secretKey, true)) {
-			// TODO: Add `JWT_SECRET_KEY` value with parameter
-			// if(Util.isEmpty(secretKey, true)) {
-			// 	secretKey = SetupLoader.getInstance().getServer().getSecret_key();
-			// }
-
 			// get by environment variable
 			if (Util.isEmpty(secretKey, true)) {
-				secretKey = System.getenv("JWT_SECRET_KEY");
+				secretKey = Env.getContext(Env.getCtx(), JWTUtil.ECA52_JWT_SECRET_KEY);
 			}
 		}
 		if(Util.isEmpty(secretKey, true)) {
-			throw new AdempiereException("@ECA52_JWT_SECRET_KEY@ @NotFound@");
+			throw new AdempiereException("@" + JWTUtil.ECA52_JWT_SECRET_KEY + "@ @NotFound@");
 		}
 		return secretKey;
 	}
