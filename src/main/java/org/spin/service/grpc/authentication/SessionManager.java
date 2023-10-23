@@ -177,8 +177,8 @@ public class SessionManager {
 			getJWT_SecretKey()
 		).build();
 		Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
-		Integer sessionId = Integer.parseInt(claims.getBody().getId());
-		if (sessionId != null && sessionId.intValue() > 0) {
+		String sessionId = claims.getBody().getId();
+		if (sessionId != null) {
 			loadValuesWithClaims(claims.getBody());
 		} else {
 			MADToken token = createSessionFromToken(tokenValue);
