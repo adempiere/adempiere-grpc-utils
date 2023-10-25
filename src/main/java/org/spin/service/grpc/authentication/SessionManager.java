@@ -53,6 +53,7 @@ import org.compiere.util.Util;
 import org.spin.eca52.util.JWTUtil;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
+import org.spin.service.grpc.util.ValueManager;
 import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
@@ -286,17 +287,15 @@ public class SessionManager {
 			)
 		);
 		if(Util.isEmpty(secretKey, true)) {
-			// get by environment variable
-			if (Util.isEmpty(secretKey, true)) {
-				secretKey = System.getenv("JWT_SECRET_KEY");
-				// get by context
-				if (Util.isEmpty(secretKey, true)) {
-					secretKey = Env.getContext(Env.getCtx(), JWTUtil.ECA52_JWT_SECRET_KEY);
-				}
-			}
+			// get by initialization statup setting
+			secretKey = Ini.getProperty(
+				JWTUtil.ECA52_JWT_SECRET_KEY
+			);
 		}
 		if(Util.isEmpty(secretKey, true)) {
-			throw new AdempiereException("@" + JWTUtil.ECA52_JWT_SECRET_KEY + "@ @NotFound@");
+			throw new AdempiereException(
+				"@" + JWTUtil.ECA52_JWT_SECRET_KEY + "@ @NotFound@"
+			);
 		}
 		return secretKey;
 	}
@@ -311,27 +310,6 @@ public class SessionManager {
 	private static String createBearerToken(MSession session, int warehouseId, String language) {
 		MUser user = MUser.get(session.getCtx(), session.getCreatedBy());
 		long sessionTimeout = getSessionTimeout(user);
-		if(sessionTimeout == 0) {
-			// TODO: Add `JWT_EXPIRATION_TIME` value with parameter
-			// if(sessionTimeout == 0) {
-			// 	sessionTimeout = SetupLoader.getInstance().getServer().getExpiration();
-			// }
-
-			// get by environment variable
-			String timeout = System.getenv("JWT_EXPIRATION_TIME");
-			if(!Util.isEmpty(timeout, true)) {
-				try {
-					sessionTimeout = Long.parseLong(timeout);
-				} catch (Exception e) {
-					// log.severe(e.getLocalizedMessage());
-				}
-			}
-
-			//	Default 24 hours
-			if (sessionTimeout == 0) {
-				sessionTimeout = 86400000;
-			}
-		}
 
 		byte[] keyBytes = Decoders.BASE64.decode(
 			getJWT_SecretKey()
@@ -374,21 +352,27 @@ public class SessionManager {
 				Env.getAD_Client_ID(Env.getCtx()),
 				0
 			);
-			try {
-				if (!Util.isEmpty(sessionTimeoutAsString, true)) {
-					sessionTimeout = Long.parseLong(sessionTimeoutAsString);
-				}
-			} catch (Exception e) {
-				// log.severe(e.getLocalizedMessage());
-			}
+			sessionTimeout = ValueManager.getIntegerFromString(
+				sessionTimeoutAsString
+			);
 		} else {
-			try {
-				sessionTimeout = Long.parseLong(
-					String.valueOf(value)
-				);
-			} catch (Exception e) {
-				// log.severe(e.getLocalizedMessage());
-			}
+			sessionTimeout = ValueManager.getIntegerFromString(
+				String.valueOf(value)
+			);
+		}
+
+		if(sessionTimeout == 0) {
+			// get by initialization statup setting
+			String timeout = Ini.getProperty(
+				"JWT_EXPIRATION_TIME"
+			);
+			sessionTimeout = ValueManager.getIntegerFromString(timeout);
+		}
+
+		//	Default 24 hours
+		if (sessionTimeout == 0) {
+			sessionTimeout = 86400000;
+			log.info("Default Session Timeout");
 		}
 		return sessionTimeout;
 	}
@@ -701,6 +685,7 @@ public class SessionManager {
 			pstmt = null;
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, "loadPreferences", e);
+			e.printStackTrace();
 		} finally {
 			DB.close(rs, pstmt);
 		}

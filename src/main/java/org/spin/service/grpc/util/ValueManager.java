@@ -744,23 +744,26 @@ public class ValueManager {
 	
 	/**
 	 * Get Int value from String
-	 * @param value
+	 * @param stringValue
 	 * @return
 	 */
-	public static int getIntegerFromString(String value) {
+	public static int getIntegerFromString(String stringValue) {
+		if (Util.isEmpty(stringValue, true)) {
+			return 0;
+		}
 		Integer integerValue = null;
 		try {
-			integerValue = Integer.parseInt(value);
+			integerValue = Integer.parseInt(stringValue);
 		} catch (Exception e) {
-			
+			// log.severe(e.getLocalizedMessage());
 		}
 		if(integerValue == null) {
 			return 0;
 		}
 		return integerValue;
 	}
-	
-	
+
+
 	/**
 	 * Validate if is boolean
 	 * @param value
