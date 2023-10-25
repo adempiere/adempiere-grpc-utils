@@ -288,7 +288,11 @@ public class SessionManager {
 		if(Util.isEmpty(secretKey, true)) {
 			// get by environment variable
 			if (Util.isEmpty(secretKey, true)) {
-				secretKey = Env.getContext(Env.getCtx(), JWTUtil.ECA52_JWT_SECRET_KEY);
+				secretKey = System.getenv("JWT_SECRET_KEY");
+				// get by context
+				if (Util.isEmpty(secretKey, true)) {
+					secretKey = Env.getContext(Env.getCtx(), JWTUtil.ECA52_JWT_SECRET_KEY);
+				}
 			}
 		}
 		if(Util.isEmpty(secretKey, true)) {
