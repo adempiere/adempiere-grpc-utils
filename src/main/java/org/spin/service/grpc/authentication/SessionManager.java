@@ -562,7 +562,7 @@ public class SessionManager {
 		if (Env.getContext(context,"#AD_Role_ID").length() == 0)
 			throw new UnsupportedOperationException("Missing Context #AD_Role_ID");
 		//	Load Role Info
-		MRole.getDefault(context, true);
+		MRole.getDefault(context, false);
 		//	Other
 		Env.setAutoCommit(context, Ini.isPropertyBool(Ini.P_A_COMMIT));
 		Env.setAutoNew(context, Ini.isPropertyBool(Ini.P_A_NEW));
