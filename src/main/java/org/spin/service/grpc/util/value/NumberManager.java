@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 
 import org.compiere.util.Util;
 
+import com.google.protobuf.Value;
+
 /**
  * Class for handle Number (BigDecimal, Integer, Double) values
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
@@ -185,6 +187,20 @@ public class NumberManager {
 			// log.severe(e.getLocalizedMessage());
 		}
 		return integerValue;
+	}
+	
+	public static BigDecimal convertFromValueToDecimal(Value value) {
+		if(value.hasStringValue()) {
+			return NumberManager.getBigDecimalFromString(value.getStringValue());
+		}
+		return null;
+	}
+	
+	public static Value convertFromDecimalToValue(BigDecimal value) {
+		if(value != null) {
+			return Value.newBuilder().setStringValue(value.toPlainString()).build();
+		}
+		return Value.newBuilder().build();
 	}
 
 }

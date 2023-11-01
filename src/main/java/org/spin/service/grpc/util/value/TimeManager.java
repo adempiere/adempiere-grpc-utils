@@ -135,5 +135,12 @@ public class TimeManager {
 		}
 		return value.getTime();
 	}
+	
+	public static Timestamp convertValueToDate(com.google.protobuf.Timestamp value) {
+		return ValueManager.getDateFromTimestampDate(value);
+	}
 
+	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
+		return ValueManager.getTimestampFromDate(value);
+	}
 }

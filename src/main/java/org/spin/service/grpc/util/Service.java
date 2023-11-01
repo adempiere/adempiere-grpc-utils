@@ -81,7 +81,7 @@ public class Service {
 	 * @param value
 	 * @param message
 	 */
-	public static  java.sql.Timestamp validateDate(com.google.protobuf.Timestamp value, String message) {
+	public static java.sql.Timestamp validateDate(com.google.protobuf.Timestamp value, String message) {
 		if(value == null) {
 			throw new AdempiereException(message);
 		}
