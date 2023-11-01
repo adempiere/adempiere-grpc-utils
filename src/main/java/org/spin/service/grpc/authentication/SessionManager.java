@@ -53,7 +53,7 @@ import org.compiere.util.Util;
 import org.spin.eca52.util.JWTUtil;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
-import org.spin.service.grpc.util.ValueManager;
+import org.spin.service.grpc.util.value.NumberManager;
 import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
@@ -352,11 +352,11 @@ public class SessionManager {
 				Env.getAD_Client_ID(Env.getCtx()),
 				0
 			);
-			sessionTimeout = ValueManager.getIntegerFromString(
+			sessionTimeout = NumberManager.getIntFromString(
 				sessionTimeoutAsString
 			);
 		} else {
-			sessionTimeout = ValueManager.getIntegerFromString(
+			sessionTimeout = NumberManager.getIntFromString(
 				String.valueOf(value)
 			);
 		}
@@ -366,7 +366,7 @@ public class SessionManager {
 			String timeout = Ini.getProperty(
 				"JWT_EXPIRATION_TIME"
 			);
-			sessionTimeout = ValueManager.getIntegerFromString(timeout);
+			sessionTimeout = NumberManager.getIntFromString(timeout);
 		}
 
 		//	Default 24 hours
