@@ -24,6 +24,8 @@ import org.adempiere.pipo.IDFinder;
 import org.compiere.model.MTable;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
+import org.spin.service.grpc.util.value.NumberManager;
+import org.spin.service.grpc.util.value.ValueManager;
 
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.Value;
@@ -115,7 +117,7 @@ public class Service {
 			throw new AdempiereException(message);
 		}
 		if(value.hasStringValue()) {
-			return ValueManager.getBigDecimalFromString(value.getStringValue());
+			return NumberManager.getBigDecimalFromString(value.getStringValue());
 		} else if(value.hasNumberValue()) {
 			return new BigDecimal(value.getNumberValue());
 		} else {
