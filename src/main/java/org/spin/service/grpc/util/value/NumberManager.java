@@ -122,6 +122,19 @@ public class NumberManager {
 		return numberValue;
 	}
 
+	/**
+	 * Convert BigDecimal to String value
+	 * @param bigDecimalValue
+	 * @return
+	 */
+	public static String getBigDecimalToString(BigDecimal bigDecimalValue) {
+		String stringValue = "";
+		if (bigDecimalValue == null) {
+			return stringValue;
+		}
+		return bigDecimalValue.toPlainString();
+	}
+
 
 
 	public static Integer getIntegerFromObject(Object value) {
@@ -198,7 +211,11 @@ public class NumberManager {
 	
 	public static Value convertFromDecimalToValue(BigDecimal value) {
 		if(value != null) {
-			return Value.newBuilder().setStringValue(value.toPlainString()).build();
+			return Value.newBuilder().setStringValue(
+				getBigDecimalToString(
+					value
+				)
+			).build();
 		}
 		return Value.newBuilder().build();
 	}
