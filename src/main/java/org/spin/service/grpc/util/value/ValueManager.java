@@ -170,7 +170,11 @@ public class ValueManager {
 		);
 		decimalValue.putFields(
 			VALUE_KEY,
-			Value.newBuilder().setStringValue(value.toPlainString()).build()
+			Value.newBuilder().setStringValue(
+				NumberManager.getBigDecimalToString(
+					value
+				)
+			).build()
 		);
 		return Value.newBuilder().setStructValue(decimalValue);
 	}
