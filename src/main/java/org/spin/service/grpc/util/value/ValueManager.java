@@ -19,6 +19,8 @@ import static com.google.protobuf.util.Timestamps.fromMillis;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -730,7 +732,26 @@ public class ValueManager {
 		//	
 		return value;
 	}
-	
+
+
+	/**
+	 * Get Decode URL value
+	 * @param value
+	 * @return
+	 */
+	public static String getDecodeUrl(String value) {
+		if (Util.isEmpty(value, true)) {
+			return value;
+		}
+		// URL decode to change characteres
+		String parseValue = URLDecoder.decode(
+			value,
+			StandardCharsets.UTF_8
+		);
+		return parseValue;
+	}
+
+
 	/**
 	 * Get translation if is necessary
 	 * @param object
