@@ -22,7 +22,7 @@ import org.compiere.util.Util;
 import com.google.protobuf.Value;
 
 /**
- * Class for handle Number (BigDecimal, Integer, Double) values
+ * Class for handle Number (BigDecimal, Integer, Double, Float) values
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
 public class NumberManager {
@@ -69,6 +69,10 @@ public class NumberManager {
 			numberValue = getBigDecimalFromDouble(
 				(Double) value
 			);
+		} else if (value instanceof Float) {
+			numberValue = getBigDecimalFromFloat(
+				(Float) value
+			);
 		} else if (value instanceof Long) {
 			long longValue = (long) value;
 			numberValue = BigDecimal.valueOf(longValue);
@@ -97,6 +101,25 @@ public class NumberManager {
 		//	
 		try {
 			numberValue = BigDecimal.valueOf(doubleValue);
+		} catch (Exception e) {
+			
+		}
+		return numberValue;
+	}
+
+	/**
+	 * Get BigDecimal number from Float
+	 * @param value
+	 * @return
+	 */
+	public static BigDecimal getBigDecimalFromFloat(Float floatValue) {
+		BigDecimal numberValue = null;
+		if (floatValue == null) {
+			return numberValue;
+		}
+		//	
+		try {
+			numberValue = BigDecimal.valueOf(floatValue);
 		} catch (Exception e) {
 			
 		}
@@ -204,7 +227,9 @@ public class NumberManager {
 	
 	public static BigDecimal convertFromValueToDecimal(Value value) {
 		if(value.hasStringValue()) {
-			return NumberManager.getBigDecimalFromString(value.getStringValue());
+			return NumberManager.getBigDecimalFromString(
+				value.getStringValue()
+			);
 		}
 		return null;
 	}
