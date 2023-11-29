@@ -70,7 +70,7 @@ public class ValueManager {
 	public static Value.Builder getValueFromObject(Object value) {
 		Value.Builder builder = Value.newBuilder();
 		if(value == null) {
-			return builder;
+			return getValueFromNull();
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
@@ -90,13 +90,51 @@ public class ValueManager {
 
 
 	/**
+	 * Get value from null
+	 * @return
+	 */
+	public static Value.Builder getValueFromNull(Object nullValue) {
+		return getValueFromNull();
+	}
+	/**
+	 * Get value from null
+	 * @return
+	 */
+	public static Value.Builder getValueFromNull() {
+		return Value.newBuilder().setNullValue(
+			com.google.protobuf.NullValue.NULL_VALUE
+		);
+	}
+
+
+	/**
+	 * Get default empty value
+	 * @param referenceId
+	 * @return
+	 */
+	public static Value.Builder getEmptyValueByReference(int referenceId) {
+		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
+			int emptyId = 0;
+			return getValueFromInteger(emptyId);
+		} else if (DisplayType.isNumeric(referenceId)) {
+			return getValueFromBigDecimal(null);
+		} else if (DisplayType.isDate(referenceId)) {
+			return getValueFromTimestamp(null);
+		} else if (DisplayType.isText(referenceId)) {
+			return getValueFromString(null);
+		}
+		return getValueFromNull();
+	}
+
+
+	/**
 	 * Get value from Integer
 	 * @param value
 	 * @return
 	 */
 	public static Value.Builder getValueFromInteger(Integer value) {
 		if(value == null) {
-			return Value.newBuilder();
+			return getValueFromNull();
 		}
 		//	default
 		return getValueFromInt(
@@ -120,7 +158,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromString(String value) {
-		return Value.newBuilder().setStringValue(validateNull(value));
+		return Value.newBuilder().setStringValue(
+			validateNull(value)
+		);
 	}
 
 
@@ -139,7 +179,7 @@ public class ValueManager {
 	 */
 	public static Value.Builder getValueFromBoolean(Boolean value) {
 		if(value == null) {
-			return Value.newBuilder();
+			return getValueFromNull();
 		}
 		return getValueFromBoolean(value.booleanValue());
 	}
@@ -162,21 +202,27 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromBigDecimal(BigDecimal value) {
-		if (value == null) {
-			return Value.newBuilder();
-		}
 		Struct.Builder decimalValue = Struct.newBuilder();
 		decimalValue.putFields(
 			TYPE_KEY,
 			Value.newBuilder().setStringValue(TYPE_DECIMAL).build()
 		);
+
+		Value.Builder valueBuilder = Value.newBuilder();
+		if (value == null) {
+			valueBuilder = getValueFromNull();
+		} else {
+			String valueString = NumberManager.getBigDecimalToString(
+				value
+			);
+			valueBuilder.setStringValue(
+				valueString
+			);
+		}
+
 		decimalValue.putFields(
 			VALUE_KEY,
-			Value.newBuilder().setStringValue(
-				NumberManager.getBigDecimalToString(
-					value
-				)
-			).build()
+			valueBuilder.build()
 		);
 		return Value.newBuilder().setStructValue(decimalValue);
 	}
@@ -310,9 +356,6 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromTimestamp(Timestamp value) {
-		if (value == null) {
-			return Value.newBuilder();
-		}
 		Struct.Builder date = Struct.newBuilder();
 		date.putFields(
 			TYPE_KEY,
@@ -320,11 +363,22 @@ public class ValueManager {
 				TYPE_DATE
 			).build()
 		);
+
+		Value.Builder valueBuilder = Value.newBuilder();
+		if (value == null) {
+			valueBuilder = getValueFromNull();
+		} else {
+			String valueString = TimeManager.getTimestampToString(
+				value
+			);
+			valueBuilder.setStringValue(
+				valueString
+			);
+		}
+
 		date.putFields(
 			VALUE_KEY,
-			Value.newBuilder().setStringValue(
-				TimeManager.getTimestampToString(value)
-			).build()
+			valueBuilder.build()
 		);
 		return Value.newBuilder().setStructValue(date);
 	}
@@ -391,7 +445,8 @@ public class ValueManager {
 	public static Value.Builder getValueFromReference(Object value, int referenceId) {
 		Value.Builder builderValue = Value.newBuilder();
 		if(value == null) {
-			return builderValue;
+			// getEmptyValueByReference(referenceId);
+			return getValueFromNull();
 		}
 		//	Validate values
 		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
@@ -583,20 +638,22 @@ public class ValueManager {
 	 */
 	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
 		Value.Builder convertedValues = Value.newBuilder();
-		if (values == null || values.size() <= 0) {
-			return convertedValues;
-		}
 		Struct.Builder mapValue = Struct.newBuilder();
-		values.keySet().forEach(keyValue -> {
-			mapValue.putFields(
-				keyValue,
-				getValueFromObject(
-					values.get(keyValue)
-				).build()
-			);
-		});
+
+		if (values != null && values.size() > 0) {
+			values.keySet().forEach(keyValue -> {
+				mapValue.putFields(
+					keyValue,
+					getValueFromObject(
+						values.get(keyValue)
+					).build()
+				);
+			});
+		}
+
 		//	
-		return convertedValues.setStructValue(mapValue);
+		convertedValues.setStructValue(mapValue);
+		return convertedValues;
 	}
 	
 	/**
