@@ -176,13 +176,24 @@ public class NumberManager {
 				(BigDecimal) value
 			);
 		} else if (value instanceof String) {
-			try {
-				integerValue = Integer.valueOf(
-					(String) value
-				);
-			} catch (Exception e) {
-				integerValue = null;
-			}
+			integerValue = getIntegerFromString(
+				(String) value
+			);
+		}
+		return integerValue;
+	}
+
+	public static Integer getIntegerFromString(String stringValue) {
+		Integer integerValue = null;
+		if (Util.isEmpty(stringValue, true)) {
+			return integerValue;
+		}
+		try {
+			integerValue = Integer.valueOf(
+				stringValue
+			);
+		} catch (Exception e) {
+			integerValue = null;
 		}
 		return integerValue;
 	}
