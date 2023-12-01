@@ -122,7 +122,7 @@ public class ValueManager {
 		} else if (DisplayType.isDate(referenceId)) {
 			return getValueFromTimestamp(null);
 		} else if (DisplayType.isText(referenceId)) {
-			return getValueFromString(null);
+			;
 		} else if (DisplayType.YesNo == referenceId) {
 			return getValueFromBoolean(false);
 		}
