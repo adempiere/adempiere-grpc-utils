@@ -20,6 +20,7 @@ import static com.google.protobuf.util.Timestamps.fromMillis;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -121,7 +122,9 @@ public class ValueManager {
 		} else if (DisplayType.isDate(referenceId)) {
 			return getValueFromTimestamp(null);
 		} else if (DisplayType.isText(referenceId)) {
-			return getValueFromString(null);
+			;
+		} else if (DisplayType.YesNo == referenceId) {
+			return getValueFromBoolean(false);
 		}
 		return getValueFromNull();
 	}
@@ -158,6 +161,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromString(String value) {
+		if (value == null) {
+			return getValueFromNull();
+		}
 		return Value.newBuilder().setStringValue(
 			validateNull(value)
 		);
@@ -472,6 +478,7 @@ public class ValueManager {
 		} else if(DisplayType.isText(referenceId)) {
 			return getValueFromString((String) value);
 		} else if (DisplayType.List == referenceId) {
+	 		// TODO: Verify if text and list y same data type
 			return getValueFromObject(value);
 		} else if (DisplayType.Button == referenceId) {
 			if (value instanceof Integer) {
@@ -491,7 +498,7 @@ public class ValueManager {
 					(String) value
 				);
 			}
-			return getValueFromObject(value); 
+			return getValueFromObject(value);
 		}
 		//
 		return builderValue;
@@ -510,22 +517,14 @@ public class ValueManager {
 				value.toString(),
 				true
 			);
-		} else if (displayTypeId == DisplayType.Amount) {
-			DecimalFormat amountFormat = DisplayType.getNumberFormat(
-				DisplayType.Amount,
-				Env.getLanguage(Env.getCtx())
-			);
-			displayedValue = amountFormat.format(
-				NumberManager.getBigDecimalFromString(
-					value.toString()
-				)
-			);
 		} else if (displayTypeId == DisplayType.Integer) {
 			DecimalFormat intFormat = DisplayType.getNumberFormat(
 				DisplayType.Integer,
 				Env.getLanguage(Env.getCtx())
 			);
-			displayedValue = intFormat.format(Integer.valueOf(value.toString()));
+			displayedValue = intFormat.format(
+				Integer.valueOf(value.toString())
+			);
 		} else if (DisplayType.isNumeric(displayTypeId)) {
 			if (I_C_Order.COLUMNNAME_ProcessedOn.equals(columnName)) {
 				if (value.toString().indexOf(".") > 0) {
@@ -625,7 +624,12 @@ public class ValueManager {
 			return convertedValues;
 		}
 		values.keySet().forEach(keyValue -> {
-			convertedValues.put(keyValue, getObjectFromValue(values.get(keyValue)));
+			Value valueBuilder = values.get(keyValue);
+			Object valueItem = getObjectFromValue(valueBuilder);
+			convertedValues.put(
+				keyValue,
+				valueItem
+			);
 		});
 		//	
 		return convertedValues;
@@ -642,11 +646,13 @@ public class ValueManager {
 
 		if (values != null && values.size() > 0) {
 			values.keySet().forEach(keyValue -> {
+				Object valueItem = values.get(keyValue);
+				Value.Builder valueBuilder = getValueFromObject(
+					valueItem
+				);
 				mapValue.putFields(
 					keyValue,
-					getValueFromObject(
-						values.get(keyValue)
-					).build()
+					valueBuilder.build()
 				);
 			});
 		}
@@ -797,13 +803,25 @@ public class ValueManager {
 	 * @return
 	 */
 	public static String getDecodeUrl(String value) {
+		// URL decode to change characteres
+		return getDecodeUrl(
+			value,
+			StandardCharsets.UTF_8
+		);
+	}
+	/**
+	 * Get Decode URL value
+	 * @param value
+	 * @return
+	 */
+	public static String getDecodeUrl(String value, Charset charsetType) {
 		if (Util.isEmpty(value, true)) {
 			return value;
 		}
 		// URL decode to change characteres
 		String parseValue = URLDecoder.decode(
 			value,
-			StandardCharsets.UTF_8
+			charsetType
 		);
 		return parseValue;
 	}
