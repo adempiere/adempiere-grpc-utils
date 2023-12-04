@@ -286,14 +286,14 @@ public class ValueManager {
 	 * @param dateValue
 	 * @return
 	 */
-	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp value) {
-		if (value == null) {
+	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp dateValue) {
+		if (dateValue == null) {
 			// return com.google.protobuf.Timestamp.newBuilder().build(); // 1970-01-01T00:00:00Z
 			// return com.google.protobuf.Timestamp.getDefaultInstance(); // 1970-01-01T00:00:00Z
 			// return com.google.protobuf.util.Timestamps.EPOCH; // 1970-01-01T00:00:00Z
 			return com.google.protobuf.util.Timestamps.MIN_VALUE; // 0001-01-01T00:00:00Z
 		}
-		return fromMillis(value.getTime());
+		return fromMillis(dateValue.getTime());
 	}
 	/**
 	 * Get Date from value
@@ -314,15 +314,6 @@ public class ValueManager {
 
 
 
-	/**
-	 * Get Date from a value
-	 * @deprecated {@link #getTimestampFromValue(Value)}
-	 * @param dateValue
-	 * @return
-	 */
-	public static Timestamp getDateFromValue(Value dateValue) {
-		return getTimestampFromValue(dateValue);
-	}
 	/**
 	 * Get Date from a value
 	 * @param dateValue
@@ -459,6 +450,10 @@ public class ValueManager {
 			Integer integerValue = NumberManager.getIntegerFromObject(
 				value
 			);
+			if (integerValue == null && value != null
+				&& (DisplayType.Search == referenceId || DisplayType.Table == referenceId)) {
+				return getValueFromObject(value);
+			}
 			return getValueFromInteger(integerValue);
 		} else if(DisplayType.isNumeric(referenceId)) {
 			BigDecimal bigDecimalValue = NumberManager.getBigDecimalFromObject(
@@ -475,11 +470,8 @@ public class ValueManager {
 				value
 			);
 			return getValueFromTimestamp(dateValue);
-		} else if(DisplayType.isText(referenceId)) {
+		} else if(DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
 			return getValueFromString((String) value);
-		} else if (DisplayType.List == referenceId) {
-	 		// TODO: Verify if text and list y same data type
-			return getValueFromObject(value);
 		} else if (DisplayType.Button == referenceId) {
 			if (value instanceof Integer) {
 				return getValueFromInteger((Integer) value);
@@ -586,7 +578,7 @@ public class ValueManager {
 	}
 
 	/**
-	 * JSON as string to Map<key, value>
+	 * JSON as string to Map(String, Object)
 	 * Ej: `{"AD_Field_ID":123,"AD_Column_ID":345}`
 	 * @param jsonValues
 	 * @return
