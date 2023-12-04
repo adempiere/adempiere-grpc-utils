@@ -90,7 +90,7 @@ public class NumberManager {
 
 	/**
 	 * Get BigDecimal number from String
-	 * @param value
+	 * @param doubleValue
 	 * @return
 	 */
 	public static BigDecimal getBigDecimalFromDouble(Double doubleValue) {
@@ -109,7 +109,7 @@ public class NumberManager {
 
 	/**
 	 * Get BigDecimal number from Float
-	 * @param value
+	 * @param floatValue
 	 * @return
 	 */
 	public static BigDecimal getBigDecimalFromFloat(Float floatValue) {
@@ -128,7 +128,7 @@ public class NumberManager {
 
 	/**
 	 * Get BigDecimal number from String
-	 * @param value
+	 * @param stringValue
 	 * @return
 	 */
 	public static BigDecimal getBigDecimalFromString(String stringValue) {

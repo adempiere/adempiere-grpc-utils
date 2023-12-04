@@ -53,9 +53,16 @@ public class TimeManager {
 
 	public static Timestamp getTimestampFromObject(Object value) {
 		Timestamp dateValue = null;
+		if (value == null) {
+			return dateValue;
+		}
 		if (value instanceof Long) {
 			dateValue = TimeManager.getTimestampFromLong(
 				(Long) value
+			);
+		} else if (value instanceof Integer) {
+			dateValue = TimeManager.getTimestampFromInteger(
+				(Integer) value
 			);
 		} else if (value instanceof String) {
 			dateValue = TimeManager.getTimestampFromString(
@@ -70,7 +77,7 @@ public class TimeManager {
 
 	/**
 	 * Convert string to dates
-	 * @param date
+	 * @param stringValue
 	 * @return
 	 */
 	public static Timestamp getTimestampFromString(String stringValue) {
@@ -117,6 +124,13 @@ public class TimeManager {
 
 
 	public static Timestamp getTimestampFromLong(long value) {
+		if (value > 0) {
+			return new Timestamp(value);
+		}
+		return null;
+	}
+
+	public static Timestamp getTimestampFromInteger(int value) {
 		if (value > 0) {
 			return new Timestamp(value);
 		}
