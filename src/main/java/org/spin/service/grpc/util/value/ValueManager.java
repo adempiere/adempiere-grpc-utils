@@ -15,8 +15,6 @@
  *************************************************************************************/
 package org.spin.service.grpc.util.value;
 
-import static com.google.protobuf.util.Timestamps.fromMillis;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
@@ -287,13 +285,16 @@ public class ValueManager {
 	 * @return
 	 */
 	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp dateValue) {
-		if (dateValue == null) {
+		Timestamp minDate = ValueManager.getDateFromTimestampDate(com.google.protobuf.util.Timestamps.MIN_VALUE);
+		if (dateValue == null || minDate.equals(dateValue)) {
 			// return com.google.protobuf.Timestamp.newBuilder().build(); // 1970-01-01T00:00:00Z
 			// return com.google.protobuf.Timestamp.getDefaultInstance(); // 1970-01-01T00:00:00Z
 			// return com.google.protobuf.util.Timestamps.EPOCH; // 1970-01-01T00:00:00Z
 			return com.google.protobuf.util.Timestamps.MIN_VALUE; // 0001-01-01T00:00:00Z
 		}
-		return fromMillis(dateValue.getTime());
+		return com.google.protobuf.util.Timestamps.fromMillis(
+			dateValue.getTime()
+		);
 	}
 	/**
 	 * Get Date from value
