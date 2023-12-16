@@ -60,6 +60,7 @@ import org.spin.util.TokenGeneratorHandler;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -106,7 +107,7 @@ public class SessionManager {
 		//	Default
 		return MCountry.getDefault(Env.getCtx());
 	}
-	
+
 	/**
 	 * Get Default from language
 	 * @param language
@@ -243,7 +244,7 @@ public class SessionManager {
 		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(language));
 		return context;
 	}
-	
+
 	public static String createSession(String clientVersion, String language, int roleId, int userId, int organizationId, int warehouseId) {
 		Properties context = (Properties) Env.getCtx().clone();
 		MRole role = MRole.get(context, roleId);
@@ -315,7 +316,10 @@ public class SessionManager {
 			getJWT_SecretKey()
 		);
 		Key key = Keys.hmacShaKeyFor(keyBytes);
-		return Jwts.builder()
+
+		long nowMillis = System.currentTimeMillis();
+
+		JwtBuilder jwtBuilder = Jwts.builder()
 			.setId(String.valueOf(session.getAD_Session_ID()))
 			.claim("AD_Client_ID", session.getAD_Client_ID())
 			.claim("AD_Org_ID", session.getAD_Org_ID())
@@ -324,14 +328,18 @@ public class SessionManager {
 			.claim("M_Warehouse_ID", warehouseId)
 			.claim("AD_Language", language)
 			.setIssuedAt(
-				new Date(System.currentTimeMillis())
-			)
-			.setExpiration(
-				new Date(System.currentTimeMillis() + sessionTimeout)
+				new Date(nowMillis)
 			)
 			.signWith(key, SignatureAlgorithm.HS256)
-			.compact()
 		;
+		// fill expiration session
+		if (sessionTimeout > 0) {
+			jwtBuilder.setExpiration(
+				new Date(nowMillis + sessionTimeout)
+			);
+		}
+
+		return jwtBuilder.compact();
 	}
 
 	/**
@@ -340,7 +348,7 @@ public class SessionManager {
 	 * @return
 	 */
 	public static long getSessionTimeout(MUser user) {
-		long sessionTimeout = 0;
+		Integer sessionTimeout = 0;
 		Object value = null;
 		// checks if the column exists in the database
 		if (user.get_ColumnIndex("ConnectionTimeout") >= 0) {
@@ -350,33 +358,38 @@ public class SessionManager {
 			String sessionTimeoutAsString = MSysConfig.getValue(
 				"WEBUI_DEFAULT_TIMEOUT",
 				Env.getAD_Client_ID(Env.getCtx()),
-				0
+				Env.getAD_Org_ID(Env.getCtx())
 			);
-			sessionTimeout = NumberManager.getIntFromString(
+			sessionTimeout = NumberManager.getIntegerFromString(
 				sessionTimeoutAsString
 			);
 		} else {
-			sessionTimeout = NumberManager.getIntFromString(
+			sessionTimeout = NumberManager.getIntegerFromString(
 				String.valueOf(value)
 			);
 		}
 
-		if(sessionTimeout == 0) {
+		if(sessionTimeout == null) {
 			// get by initialization statup setting
 			String timeout = Ini.getProperty(
 				"JWT_EXPIRATION_TIME"
 			);
-			sessionTimeout = NumberManager.getIntFromString(timeout);
+			sessionTimeout = NumberManager.getIntegerFromString(timeout);
 		}
 
-		//	Default 24 hours
-		if (sessionTimeout == 0) {
+		if (sessionTimeout == null) {
+			sessionTimeout = 0;
+			log.info("Without Session Timeout");
+		} else if (sessionTimeout == -1) {
+			//	Default 24 hours
 			sessionTimeout = 86400000;
-			log.info("Default Session Timeout");
+			log.info("With Default Session Timeout");
 		}
+
 		return sessionTimeout;
 	}
-	
+
+
 	/**
 	 * Set Default warehouse and organization
 	 * @param context
@@ -401,7 +414,7 @@ public class SessionManager {
 		}
 		Env.setContext(context, "#AD_Org_ID", organizationId);
 	}
-	
+
 	/**
 	 * Get id of current session
 	 * @return
@@ -409,7 +422,7 @@ public class SessionManager {
 	public static int getSessionId() {
 		return Env.getContextAsInt(Env.getCtx(), "#AD_Session_ID");
 	}
-	
+
 	/**
 	 * Get uuid of current session
 	 * @return
@@ -417,7 +430,7 @@ public class SessionManager {
 	public static String getSessionUuid() {
 		return Env.getContext(Env.getCtx(), "#Session_UUID");
 	}
-	
+
 	/**
 	 * Get token object: validate it
 	 * @param tokenValue
@@ -480,7 +493,7 @@ public class SessionManager {
 		//	Load preferences
 		loadPreferences(context);
 	}
-	
+
 	/**
 	 * Get Default Warehouse after login
 	 * @param organizationId
