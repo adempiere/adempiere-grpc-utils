@@ -17,10 +17,15 @@ package org.spin.service.grpc.util.db;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.adempiere.core.domains.models.I_AD_Element;
 import org.adempiere.model.MBrowse;
 import org.adempiere.model.MBrowseField;
 import org.adempiere.model.MViewColumn;
+import org.compiere.model.MColumn;
+import org.compiere.model.MField;
+import org.compiere.model.MTab;
 import org.compiere.util.Env;
+import org.compiere.util.Util;
 import org.spin.util.ASPUtil;
 
 /**
@@ -30,6 +35,118 @@ import org.spin.util.ASPUtil;
 public class OrderByUtil {
 
 	public static String SQL_ORDER_BY_REGEX = "\\s+(ORDER BY)\\s+";
+
+	/**
+	 *	Returns true if this is a detail record
+	 *  @return true if not parent tab
+	 */
+	public static boolean isDetail(MTab tab)
+	{
+		// First Tab Level is not a detail 
+		if (tab.getTabLevel() == 0) {
+			return false;
+		}
+
+		boolean isWithParentFields = tab.getASPFields()
+			.stream()
+			.filter(field -> {
+				MColumn column = MColumn.get(Env.getCtx(), field.getAD_Column_ID());
+				return column.isParent();
+			})
+			.findFirst()
+			.isPresent();
+		;
+		//	We have IsParent columns and/or a link column
+		if (isWithParentFields || tab.getAD_Column_ID() > 0) {
+			return true;
+		}
+		return false;
+	}	//	isDetail
+
+	public static String getTabOrderByClause(MTab tab) {
+		//	First Prio: Tab Order By
+		String orderByClause = tab.getOrderByClause();
+		if (!Util.isEmpty(orderByClause, true)) {
+			return orderByClause;
+		}
+
+		//	Second Prio: Fields (save it)
+		orderByClause = getTabOrderByWithFields(tab);
+		if (!Util.isEmpty(orderByClause, true)) {
+			return orderByClause;
+		}
+
+		//	Third Prio: onlyCurrentRows
+		orderByClause = I_AD_Element.COLUMNNAME_Created;
+		boolean isOnlyCurrentRows = true;
+		if (isOnlyCurrentRows && !(isDetail(tab))) {
+			//	first tab only
+			orderByClause += " DESC";
+		}
+
+		return orderByClause;
+	}
+
+
+
+	public static String getTabOrderByWithFields(MTab tab) {
+		String[] orderBys = getTabOrderBysColumns(tab);
+		//	Second Prio: Fields (save it)
+		String orderByClause = "";
+		int count = 0;
+		for (String orderColumnName : orderBys) {
+			// String orderColumnName = orderBys[i];
+			if (!Util.isEmpty(orderColumnName, true)) {
+				if (orderByClause.length() > 0) {
+					orderByClause += ",";
+				}
+				orderByClause += orderColumnName;
+				count++;
+			}
+			if (count > 2) {
+				break;
+			}
+		}
+
+		return orderByClause;
+	}
+
+	public static String[] getTabOrderBysColumns(MTab tab) {
+		String orderBys[] = new String[3];
+		for (MField field : tab.getASPFields()) {
+			if (field.getSortNo() == null || field.getSortNo().compareTo(Env.ZERO) == 0) {
+				continue;
+			}
+			MColumn column = MColumn.get(Env.getCtx(), field.getAD_Column_ID());
+			String columnName = column.getColumnName();
+			//	Order By
+			int sortNo = field.getSortNo().intValue();
+			if (sortNo == 0) {
+				;
+			}
+			else if (Math.abs(sortNo) == 1) {
+				orderBys[0] = columnName;
+				if (sortNo < 0) {
+					orderBys[0] += " DESC";
+				}
+			}
+			else if (Math.abs(sortNo) == 2) {
+				orderBys[1] = columnName;
+				if (sortNo < 0) {
+					orderBys[1] += " DESC";
+				}
+			}
+			else if (Math.abs(sortNo) == 3) {
+				orderBys[2] = columnName;
+				if (sortNo < 0) {
+					orderBys[2] += " DESC";
+				}
+			}
+		};
+
+		return orderBys;
+	}
+
 
 	/**
 	 * Get Order By
