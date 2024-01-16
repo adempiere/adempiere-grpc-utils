@@ -31,6 +31,8 @@ public class OrderByUtil {
 
 	public static String SQL_ORDER_BY_REGEX = "\\s+(ORDER BY)\\s+";
 
+
+
 	/**
 	 * Get Order By
 	 * @param browser
@@ -48,7 +50,7 @@ public class OrderByUtil {
 		}
 		return sqlOrderBy.length() > 0 ? sqlOrderBy.toString(): "";
 	}
-	
+
 	/**
 	 * Get Order By Postirion for SB
 	 * @param browser
@@ -66,6 +68,8 @@ public class OrderByUtil {
 		}
 		return -1;
 	}
+
+
 
 	public static String removeOrderBy(String sql) {
 		String sqlWithoutOrderBy = sql;
