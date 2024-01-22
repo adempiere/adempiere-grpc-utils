@@ -168,8 +168,16 @@ public class NumberManager {
 		if (value instanceof Integer) {
 			integerValue = (Integer) value;
 		} else if (value instanceof Long) {
-			getIntegerFromLong(
+			integerValue = getIntegerFromLong(
 				(Long) value
+			);
+		} else if(value instanceof Float) {
+			integerValue = getIntegerFromFloat(
+				(Float) value
+			);
+		} else if(value instanceof Double) {
+			integerValue = getIntegerFromDouble(
+				(Double) value
 			);
 		} else if(value instanceof BigDecimal) {
 			integerValue = getIntegerFromBigDecimal(
@@ -205,6 +213,26 @@ public class NumberManager {
 			return numberValue;
 		}
 		numberValue = Math.toIntExact(longValue);
+		return numberValue;
+	}
+
+
+	public static Integer getIntegerFromFloat(Float floatValue) {
+		Integer numberValue = null;
+		if (floatValue == null) {
+			return numberValue;
+		}
+		numberValue = floatValue.intValue();
+		return numberValue;
+	}
+
+
+	public static Integer getIntegerFromDouble(Double doubleValue) {
+		Integer numberValue = null;
+		if (doubleValue == null) {
+			return numberValue;
+		}
+		numberValue = doubleValue.intValue();
 		return numberValue;
 	}
 

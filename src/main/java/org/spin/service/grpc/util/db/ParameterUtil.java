@@ -106,7 +106,7 @@ public class ParameterUtil {
 	/**
 	 * Set DB Parameter from Objects list
 	 * @param pstmt
-	 * @param parameters
+	 * @param parametersList
 	 */
 	public static void setParametersFromValuesList(PreparedStatement pstmt, List<Value> parametersList) {
 		try {
@@ -124,7 +124,7 @@ public class ParameterUtil {
 	/**
 	 * Set Parameter for Statement from value
 	 * @param pstmt
-	 * @param value
+	 * @param grpcValue
 	 * @param index
 	 * @throws SQLException
 	 */
