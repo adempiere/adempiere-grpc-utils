@@ -52,11 +52,15 @@ public class CountUtil {
 		// tableName tableName, tableName AS tableName
 		String tableWithAliases = FromUtil.getPatternTableName(tableName, tableNameAlias);
 
-		Matcher matcherFrom = Pattern.compile(
-			"\\s+(FROM)\\s+(" + tableWithAliases + ")\\s+(WHERE|(LEFT|INNER|RIGHT)\\s+JOIN)",
+		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")\\s+(WHERE|((LEFT|INNER|RIGHT|FULL|OUTER|SELF|CROSS)\\s+){0,1}JOIN)";
+
+		Pattern pattern = Pattern.compile(
+			regex,
 			Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-		)
-		.matcher(sql);
+		);
+
+		Matcher matcherFrom = pattern
+			.matcher(sql);
 
 		List<MatchResult> fromWhereParts = matcherFrom.results()
 			.collect(Collectors.toList());
