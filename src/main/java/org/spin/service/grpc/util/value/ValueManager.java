@@ -313,8 +313,6 @@ public class ValueManager {
 		return Timestamp.valueOf(dateTime);
 	}
 
-
-
 	/**
 	 * Get Date from a value
 	 * @param dateValue
@@ -326,27 +324,41 @@ public class ValueManager {
 				|| !(dateValue.hasStringValue() || dateValue.hasNumberValue() || dateValue.hasStructValue())) {
 			return null;
 		}
-		Map<String, Value> values = dateValue.getStructValue().getFieldsMap();
-		if(values == null) {
-			return null;
+
+		if (dateValue.hasStructValue()) {
+			Map<String, Value> values = dateValue.getStructValue().getFieldsMap();
+			if(values == null) {
+				return null;
+			}
+			Value type = values.get(TYPE_KEY);
+			Value value = values.get(VALUE_KEY);
+			if(type == null || value == null) {
+				return null;
+			}
+			String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+			String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
+			if((!validType.equals(TYPE_DATE)
+					&& !validType.equals(TYPE_DATE_TIME))
+					|| validValue.length() == 0) {
+				return null;
+			}
+			return TimeManager.getTimestampFromString(
+				validValue
+			);
 		}
-		Value type = values.get(TYPE_KEY);
-		Value value = values.get(VALUE_KEY);
-		if(type == null
-				|| value == null) {
-			return null;
+		if (dateValue.hasStringValue()) {
+			return TimeManager.getTimestampFromString(
+				dateValue.getStringValue()
+			);
 		}
-		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
-		String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
-		if((!validType.equals(TYPE_DATE)
-				&& !validType.equals(TYPE_DATE_TIME))
-				|| validValue.length() == 0) {
-			return null;
+		if (dateValue.hasNumberValue()) {
+			return TimeManager.getTimestampFromDouble(
+				dateValue.getNumberValue()
+			);
 		}
-		return TimeManager.getTimestampFromString(
-			validValue
-		);
+		return null;
 	}
+
 
 	/**
 	 * Get value from a date

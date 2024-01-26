@@ -122,10 +122,18 @@ public class TimeManager {
 		return new SimpleDateFormat(TIME_FORMAT).format(date);
 	}
 
-
 	public static Timestamp getTimestampFromLong(long value) {
 		if (value > 0) {
 			return new Timestamp(value);
+		}
+		return null;
+	}
+
+	public static Timestamp getTimestampFromDouble(double value) {
+		if (value > 0.0) {
+			return new Timestamp(
+				(int) value
+			);
 		}
 		return null;
 	}
@@ -157,4 +165,5 @@ public class TimeManager {
 	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
 		return ValueManager.getTimestampFromDate(value);
 	}
+
 }
