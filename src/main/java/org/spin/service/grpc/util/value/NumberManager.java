@@ -263,7 +263,16 @@ public class NumberManager {
 		}
 		return integerValue;
 	}
-	
+
+	/**
+	 * Get String value from Int
+	 * @param stringValue
+	 * @return
+	 */
+	public static String getIntToString(int intValue) {
+		return String.valueOf(intValue);
+	}
+
 	public static BigDecimal convertFromValueToDecimal(Value value) {
 		if(value.hasStringValue()) {
 			return NumberManager.getBigDecimalFromString(
