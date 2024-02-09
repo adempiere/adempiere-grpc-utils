@@ -102,13 +102,12 @@ public class TimeManager {
 
 		//	Convert
 		if(validDate != null) {
-			return new Timestamp(
+			return getTimestampFromLong(
 				validDate.getTime()
 			);
 		}
 		return null;
 	}
-
 
 	/**
 	 * Convert Timestamp to String
@@ -119,7 +118,37 @@ public class TimeManager {
 		if(date == null) {
 			return null;
 		}
-		return new SimpleDateFormat(TIME_FORMAT).format(date);
+		return getTimestampToString(date, TIME_FORMAT);
+	}
+
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param pattern default `yyyy-MM-dd hh:mm:ss`
+	 * @return
+	 */
+	public static String getTimestampToString(Timestamp date, String pattern) {
+		if(date == null) {
+			return null;
+		}
+		if (Util.isEmpty(pattern, true)) {
+			pattern = TIME_FORMAT;
+		}
+		return new SimpleDateFormat(pattern).format(date);
+	}
+
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @return
+	 */
+	public static Timestamp getTimestampFromDate(Date value) {
+		if(value == null) {
+			return null;
+		}
+		return new Timestamp(
+			value.getTime()
+		);
 	}
 
 	public static Timestamp getTimestampFromLong(long value) {
@@ -157,7 +186,15 @@ public class TimeManager {
 		}
 		return value.getTime();
 	}
-	
+
+
+	/**
+	 * @link ValueManager.getDateFromTimestampDate
+	 * @param value
+	 * @return
+	 * @see {@link ValueManager.getDateFromTimestampDate(com.google.protobuf.Timestamp)}
+	 */
+	@Deprecated
 	public static Timestamp convertValueToDate(com.google.protobuf.Timestamp value) {
 		return ValueManager.getDateFromTimestampDate(value);
 	}
