@@ -112,6 +112,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getEmptyValueByReference(int referenceId) {
+		if (referenceId <= 0) {
+			return getValueFromNull();
+		}
 		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
 			int emptyId = 0;
 			return getValueFromInteger(emptyId);
@@ -458,6 +461,9 @@ public class ValueManager {
 			// getEmptyValueByReference(referenceId);
 			return getValueFromNull();
 		}
+		if (referenceId <= 0) {
+			return getValueFromObject(value);
+		}
 		//	Validate values
 		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
 			Integer integerValue = NumberManager.getIntegerFromObject(
@@ -504,6 +510,8 @@ public class ValueManager {
 				);
 			}
 			return getValueFromObject(value);
+		} else {
+			builderValue = getValueFromObject(value);
 		}
 		//
 		return builderValue;
@@ -511,8 +519,10 @@ public class ValueManager {
 
 	public static String getDisplayedValueFromReference(Object value, String columnName, int displayTypeId, int referenceValueId) {
 		String displayedValue = null;
-
 		if (value == null) {
+			return displayedValue;
+		}
+		if (displayTypeId <= 0) {
 			return displayedValue;
 		}
 		if (DisplayType.isText (displayTypeId)) {
@@ -756,6 +766,9 @@ public class ValueManager {
 		if(value == null) {
 			return null;
 		}
+		if (referenceId <= 0) {
+			return getObjectFromValue(value);
+		}
 		//	Validate values
 		if(isLookup(referenceId)
 				|| DisplayType.isID(referenceId)) {
@@ -772,6 +785,7 @@ public class ValueManager {
 			return getStringFromValue(value);
 		}
 		//	
+		// TODO: return getObjectFromValue(value);
 		return null;
 	}
 	
