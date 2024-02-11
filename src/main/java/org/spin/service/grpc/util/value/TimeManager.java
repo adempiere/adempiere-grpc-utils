@@ -139,7 +139,7 @@ public class TimeManager {
 
 	/**
 	 * Convert Timestamp to String
-	 * @param date
+	 * @param value
 	 * @return
 	 */
 	public static Timestamp getTimestampFromDate(Date value) {
