@@ -266,7 +266,7 @@ public class NumberManager {
 
 	/**
 	 * Get String value from Int
-	 * @param stringValue
+	 * @param intValue
 	 * @return
 	 */
 	public static String getIntToString(int intValue) {

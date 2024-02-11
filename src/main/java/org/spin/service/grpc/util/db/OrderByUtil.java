@@ -31,6 +31,11 @@ public class OrderByUtil {
 
 	public static String SQL_ORDER_BY_REGEX = "\\s+(ORDER BY)\\s+";
 
+	public static Pattern SQL_ORDER_BY_PATTERN = Pattern.compile(
+		SQL_ORDER_BY_REGEX,
+		Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+	);
+
 
 
 	/**
@@ -62,8 +67,9 @@ public class OrderByUtil {
 		int col = 0;
 		for (MBrowseField field : browser.getFields()) {
 			int sortBySqlNo = col + colOffset;
-			if (browserField.getAD_Browse_Field_ID() == field.getAD_Browse_Field_ID())
+			if (browserField.getAD_Browse_Field_ID() == field.getAD_Browse_Field_ID()) {
 				return sortBySqlNo;
+			}
 			col ++;
 		}
 		return -1;
@@ -71,13 +77,34 @@ public class OrderByUtil {
 
 
 
+	/**
+	 * Extract only Order By clause from sql
+	 * @param sql
+	 * @return
+	 */
+	public static String getOnlyOrderBy(String sql) {
+		String orderByClause = "";
+		// extract order by clause
+		Matcher matcherOrderBy = SQL_ORDER_BY_PATTERN
+			.matcher(sql);
+		if (matcherOrderBy.find()) {
+			int positionOrderBy = matcherOrderBy.start();
+			orderByClause = sql.substring(positionOrderBy);
+		}
+		return orderByClause;
+	}
+
+
+	/**
+	 * Remove Order By clause from sql
+	 * @param sql
+	 * @return
+	 */
 	public static String removeOrderBy(String sql) {
 		String sqlWithoutOrderBy = sql;
 		// remove order by clause
-		Matcher matcherOrderBy = Pattern.compile(
-			SQL_ORDER_BY_REGEX,
-			Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-		).matcher(sql);
+		Matcher matcherOrderBy = SQL_ORDER_BY_PATTERN
+			.matcher(sql);
 		if(matcherOrderBy.find()) {
 			int positionOrderBy = matcherOrderBy.start();
 			sqlWithoutOrderBy = sql.substring(0, positionOrderBy);
