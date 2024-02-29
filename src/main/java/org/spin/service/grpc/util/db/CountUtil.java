@@ -52,7 +52,7 @@ public class CountUtil {
 		// tableName tableName, tableName AS tableName
 		String tableWithAliases = FromUtil.getPatternTableName(tableName, tableNameAlias);
 
-		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")\\s+(WHERE|((LEFT|INNER|RIGHT|FULL|OUTER|SELF|CROSS)\\s+){0,1}JOIN)";
+		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")\\s+(WHERE|((LEFT|INNER|RIGHT|FULL|SELF|CROSS)\\s+(OUTER\\s+){0,1}){0,1}JOIN)";
 
 		Pattern pattern = Pattern.compile(
 			regex,
@@ -63,7 +63,10 @@ public class CountUtil {
 			.matcher(sql);
 
 		List<MatchResult> fromWhereParts = matcherFrom.results()
-			.collect(Collectors.toList());
+			.collect(
+				Collectors.toList()
+			)
+		;
 		int positionFrom = -1;
 		if (fromWhereParts != null && fromWhereParts.size() > 0) {
 			// MatchResult lastFrom = fromWhereParts.get(fromWhereParts.size() - 1);

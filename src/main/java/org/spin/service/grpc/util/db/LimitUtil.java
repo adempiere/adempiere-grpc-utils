@@ -15,7 +15,6 @@
 package org.spin.service.grpc.util.db;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.compiere.util.Util;
 
@@ -102,18 +101,25 @@ public class LimitUtil {
 	 * @return
 	 */
 	public static String getQueryWithLimit(String query, int limit, int offset) {
-		Matcher matcher = Pattern.compile(
-			OrderByUtil.SQL_ORDER_BY_REGEX,
-			Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-		).matcher(query);
-		int positionFrom = -1;
+		Matcher matcher = OrderByUtil.SQL_ORDER_BY_PATTERN
+			.matcher(query)
+		;
+
+		String sql = query;
 		if(matcher.find()) {
-			positionFrom = matcher.start();
-			query = query.substring(0, positionFrom) + " AND ROWNUM >= " + offset + " AND ROWNUM <= " + limit + " " + query.substring(positionFrom);
+			int positionFrom = matcher.start();
+			sql = query.substring(0, positionFrom)
+				+ " AND ROWNUM >= " + offset
+				+ " AND ROWNUM <= " + limit
+				+ " " + query.substring(positionFrom)
+			;
 		} else {
-			query = query + " AND ROWNUM >= " + offset + " AND ROWNUM <= " + limit;
+			sql = query
+				+ " AND ROWNUM >= " + offset
+				+ " AND ROWNUM <= " + limit
+			;
 		}
-		return query;
+		return sql;
 	}
 
 }
