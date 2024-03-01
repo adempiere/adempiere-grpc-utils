@@ -45,6 +45,21 @@ public class BooleanManager {
 	}
 
 
+	/**
+	 * Validate if is boolean
+	 * @param value
+	 * @return
+	 */
+	public static boolean isValidDataBaseBoolean(String value) {
+		if (Util.isEmpty(value, true)) {
+			return false;
+		}
+		//	
+		return value.equals("Y")
+			|| value.equals("N")
+		;
+	}
+
 
 	public static boolean getBooleanFromString(String stringValue) {
 		if (Util.isEmpty(stringValue, true)) {
