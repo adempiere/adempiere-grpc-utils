@@ -46,7 +46,7 @@ public class BooleanManager {
 
 
 	/**
-	 * Validate if is boolean
+	 * Validate if is valid data base boolean
 	 * @param value
 	 * @return
 	 */
