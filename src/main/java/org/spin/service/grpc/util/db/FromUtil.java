@@ -54,7 +54,7 @@ public class FromUtil {
 
 		// tableName tableAlias, tableName AS tableAlias
 		String patternOnlyTableAlias = "";
-		if (!Util.isEmpty(tableNameAlias, true) && !tableName.equals(tableNameAlias)) {
+		if (!Util.isEmpty(tableNameAlias, true) && !tableName.trim().equals(tableNameAlias.trim())) {
 			patternOnlyTableAlias = tableName + "\\s+" + tableNameAlias + "|" + tableName + "\\s+AS\\s+" + tableNameAlias;
 			patternTableWithAliases = patternOnlyTableAlias;
 		}
