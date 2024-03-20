@@ -52,16 +52,17 @@ public class CountUtil {
 		// tableName tableName, tableName AS tableName
 		String tableWithAliases = FromUtil.getPatternTableName(tableName, tableNameAlias);
 
-		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")\\s+(WHERE|((LEFT|INNER|RIGHT|FULL|SELF|CROSS)\\s+(OUTER\\s+){0,1}){0,1}JOIN)";
+		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")"
+			+ "\\s+(\\bWHERE\\b|\\bORDER\\s+BY\\b|"
+			+ "((LEFT|INNER|RIGHT|FULL|SELF|CROSS)\\s+(OUTER\\s+){0,1}){0,1}JOIN)"
+		;
 
 		Pattern pattern = Pattern.compile(
 			regex,
 			Pattern.CASE_INSENSITIVE | Pattern.DOTALL
 		);
-
 		Matcher matcherFrom = pattern
 			.matcher(sql);
-
 		List<MatchResult> fromWhereParts = matcherFrom.results()
 			.collect(
 				Collectors.toList()
@@ -73,7 +74,27 @@ public class CountUtil {
 			MatchResult lastFrom = fromWhereParts.get(0);
 			positionFrom = lastFrom.start();
 		} else {
-			return 0;
+			// without JOIN/WHERE/ORDER BY
+			String regexSimply = "\\s+(FROM)\\s+(" + tableWithAliases + ")";
+			Pattern patternSimply = Pattern.compile(
+				regexSimply,
+				Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+			);
+			Matcher matcherFromSimply = patternSimply
+				.matcher(sql);
+			List<MatchResult> fromWherePartsSimply = matcherFromSimply.results()
+				.collect(
+					Collectors.toList()
+				)
+			;
+			if (fromWherePartsSimply != null && fromWherePartsSimply.size() > 0) {
+				// MatchResult lastFrom = fromWherePartsSimply.get(fromWherePartsSimply.size() - 1);
+				MatchResult lastFrom = fromWherePartsSimply.get(0);
+				positionFrom = lastFrom.start();
+			} else {
+				// whitout `FROM` clause
+				return 0;
+			}
 		}
 
 		String queryCount = "SELECT COUNT(*) " + sql.substring(positionFrom, sql.length());
