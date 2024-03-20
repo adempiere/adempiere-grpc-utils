@@ -5,9 +5,10 @@ plugins {
 }
 
 sourceCompatibility = 1.11
+
 def baseVersion = System.getenv("ADEMPIERE_BASE_VERSION") ?: '3.9.4'
 def baseGroupId = System.getenv("ADEMPIERE_BASE_GROUP") ?: 'io.github.adempiere'
-def grpcVersion = '1.53.0'
+def grpcVersion = '1.62.2'
 
 repositories {
     mavenLocal()
@@ -27,12 +28,13 @@ dependencies {
             '*.jar'
         ]
     )
-    api "io.grpc:grpc-netty-shaded:${grpcVersion}"
+	api "io.grpc:grpc-netty-shaded:${grpcVersion}"
 	api 'com.google.protobuf:protobuf-java:3.24.3'
 	api 'com.google.protobuf:protobuf-java-util:3.24.3'
 	api 'io.jsonwebtoken:jjwt-api:0.11.2'
     api 'io.jsonwebtoken:jjwt-impl:0.11.2'
     api 'io.jsonwebtoken:jjwt-jackson:0.11.2'
+
     //	ADempiere Core
     api "${baseGroupId}:base:${baseVersion}"
    	api "${baseGroupId}:adempiere-jwt-token:1.0.2"
