@@ -234,7 +234,7 @@ public class SessionManager {
 			sessionId = NumberManager.getIntFromString(
 				claims.getBody().getId()
 			);
-			if (sessionId >= 0) {
+			if (sessionId > 0) {
 				loadValuesWithClaims(claims.getBody());
 			} else {
 				MADToken token = createSessionFromToken(tokenValue);
