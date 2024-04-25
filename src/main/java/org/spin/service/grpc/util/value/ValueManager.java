@@ -528,9 +528,8 @@ public class ValueManager {
 		if (DisplayType.isText (displayTypeId)) {
 			;
 		} else if (displayTypeId == DisplayType.YesNo) {
-			displayedValue = BooleanManager.getBooleanToString(
-				value.toString(),
-				true
+			displayedValue = BooleanManager.getBooleanToTranslated(
+				value.toString()
 			);
 		} else if (displayTypeId == DisplayType.Integer) {
 			DecimalFormat intFormat = DisplayType.getNumberFormat(
