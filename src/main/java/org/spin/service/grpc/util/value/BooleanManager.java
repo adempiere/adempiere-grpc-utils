@@ -74,38 +74,64 @@ public class BooleanManager {
 
 
 	/**
-	 * "Y" / "N" , "Yes" / "Not"
+	 * "Y" / "N" , "Yes" / "Not", "true" / "false"
 	 * @param value
-	 * @return
+	 * @return "Y" / "N"
 	 */
 	public static String getBooleanToString(String value) {
 		return getBooleanToString(
-			getBooleanFromString(value),
-			false
+			getBooleanFromString(value)
 		);
 	}
+	/**
+	 * @deprecated
+	 * @see {@link BooleanManager.getBooleanToTranslated(String)}
+	 * @param value
+	 * @param translated
+	 * @return
+	 */
 	public static String getBooleanToString(String value, boolean translated) {
+		if (translated) {
+			return getBooleanToTranslated(value);
+		}
 		return getBooleanToString(
-			getBooleanFromString(value),
-			translated
+			getBooleanFromString(value)
 		);
 	}
-
 	public static String getBooleanToString(boolean value) {
-		return getBooleanToString(value, false);
-	}
-	public static String getBooleanToString(boolean value, boolean translated) {
 		String convertedValue = "N";
 		if (value) {
 			convertedValue = "Y";
 		}
-		if (translated) {
-			return Msg.getMsg(
-				Env.getCtx(),
-				convertedValue
-			);
-		}
 		return convertedValue;
+	}
+
+	public static String getBooleanToTranslated(boolean value) {
+		return getBooleanToTranslated(
+			value,
+			Env.getAD_Language(Env.getCtx())
+		);
+	}
+	public static String getBooleanToTranslated(boolean value, String language) {
+		return Msg.getMsg(
+			language,
+			getBooleanToString(value)
+		);
+	}
+
+	public static String getBooleanToTranslated(String value) {
+		String acceptedValue = getBooleanToString(value);
+		return getBooleanToTranslated(
+			acceptedValue,
+			Env.getAD_Language(Env.getCtx())
+		);
+	}
+	public static String getBooleanToTranslated(String value, String language) {
+		String acceptedValue = getBooleanToString(value);
+		return Msg.getMsg(
+			language,
+			acceptedValue
+		);
 	}
 
 }

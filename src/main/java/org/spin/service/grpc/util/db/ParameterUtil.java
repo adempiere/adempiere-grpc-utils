@@ -163,7 +163,7 @@ public class ParameterUtil {
 		} else if (value instanceof String) {
 			sqlValue = value.toString();
 		} else if (value instanceof Boolean) {
-			sqlValue = " '" + BooleanManager.getBooleanToString((Boolean) value, false) + "' ";
+			sqlValue = " '" + BooleanManager.getBooleanToString((Boolean) value) + "' ";
 		} else if(value instanceof Timestamp) {
 			sqlValue = DB.TO_DATE((Timestamp) value, displayType == DisplayType.Date);
 		}
