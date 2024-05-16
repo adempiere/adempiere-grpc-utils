@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SortingManager {
 	
-	private List<Map<String, Object>> fillValues;
+	private List<Map<String, String>> fillValues;
 	
 	/**
 	 * read filters and convert to stub
@@ -44,11 +44,11 @@ public class SortingManager {
 	@SuppressWarnings("unchecked")
 	private SortingManager(String sorting) {
 		if(Util.isEmpty(sorting, true)) {
-			this.fillValues = new ArrayList<>();
+			fillValues = new ArrayList<>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
-				this.fillValues = fileMapper.readValue(sorting, List.class);
+				fillValues = fileMapper.readValue(sorting, List.class);
 			} catch (IOException e) {
 				// throw new RuntimeException("Invalid filter");
 				try {
@@ -60,20 +60,20 @@ public class SortingManager {
 					*/
 					TypeReference<HashMap<String,String>> valueType = new TypeReference<HashMap<String,String>>() {};
 					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
-					this.fillValues = new ArrayList<>();
+					fillValues = new ArrayList<>();
 
 					Map<String, String> keyValueFilters = fileMapper.readValue(sorting, valueType);
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
 						keyValueFilters.entrySet().forEach(entry -> {
-							Map<String, Object> condition = new HashMap<>();
+							Map<String, String> condition = new HashMap<>();
 							condition.put(Order.NAME, entry.getKey());
 							condition.put(Order.TYPE, Order.ASCENDING);
 							Object value = entry.getValue();
 							if (value != null) {
-								condition.put(Order.TYPE, value);
+								condition.put(Order.TYPE, value.toString());
 							}
 
-							this.fillValues.add(condition);
+							fillValues.add(condition);
 						});
 					}
 				} catch (IOException e2) {
@@ -88,17 +88,17 @@ public class SortingManager {
 	}
 
 	public List<Order> getSorting() {
-		if(this.fillValues == null) {
+		if(fillValues == null) {
 			return new ArrayList<Order>();
 		}
-		return this.fillValues.stream()
+		return fillValues.stream()
 			.map(value -> new Order(value))
 			.collect(Collectors.toList());
 	}
 
 	public String getSotingAsSQL() {
 		StringBuffer sortingAsSQL = new StringBuffer();
-		this.getSorting().forEach(sotring -> {
+		getSorting().forEach(sotring -> {
 			if(sortingAsSQL.length() > 0) {
 				sortingAsSQL.append(", ");
 			}

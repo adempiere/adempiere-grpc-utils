@@ -50,15 +50,15 @@ public class Filter {
 	private Map<String, Object> condition;
 
 	public Filter(Map<String, Object> newCondition) {
-		this.condition = newCondition;
+		condition = newCondition;
 	}
 
 	public void setColumnName(String columnName) {
-		this.condition.put(NAME, columnName);
+		condition.put(NAME, columnName);
 	}
 
 	public String getColumnName() {
-		Object key = this.condition.get(NAME);
+		Object key = condition.get(NAME);
 		if (key == null) {
 			return null;
 		}
@@ -66,7 +66,7 @@ public class Filter {
 	}
 
 	public String getOperator() {
-		Object operator = this.condition.get(OPERATOR);
+		Object operator = condition.get(OPERATOR);
 		if (operator == null) {
 			return null;
 		}
@@ -74,12 +74,12 @@ public class Filter {
 	}
 
 	public Object getValue() {
-		return this.condition.get(VALUES);
+		return condition.get(VALUES);
 	}
 
 	@SuppressWarnings("unchecked")
 	public List<Object> getValues() {
-		Object value = this.condition.get(VALUES);
+		Object value = condition.get(VALUES);
 		if (value == null) {
 			return null;
 		}

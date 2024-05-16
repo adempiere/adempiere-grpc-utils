@@ -29,18 +29,18 @@ public class Order {
 	public static final String NAME = "name";
 	public static final String TYPE = "type";
 
-	private Map<String, Object> order;
+	private Map<String, String> order;
 
-	public Order(Map<String, Object> newOrder) {
-		this.order = newOrder;
+	public Order(Map<String, String> newOrder) {
+		order = newOrder;
 	}
 
 	public String getColumnName() {
-		return (String) this.order.get(NAME);
+		return order.get(NAME);
 	}
 
 	public String getSortType() {
-		return (String) this.order.get(TYPE);
+		return order.get(TYPE);
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public class FilterManager {
 	@SuppressWarnings("unchecked")
 	private FilterManager(String filter) {
 		if(Util.isEmpty(filter, true)) {
-			this.fillValues = new ArrayList<>();
+			fillValues = new ArrayList<>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
@@ -55,7 +55,7 @@ public class FilterManager {
 						{"name": "C_Invoice", "operator": "equal", "values": 333}
 					]
 				*/
-				this.fillValues = fileMapper.readValue(filter, List.class);
+				fillValues = fileMapper.readValue(filter, List.class);
 			} catch (IOException e) {
 				try {
 					/*
@@ -66,7 +66,7 @@ public class FilterManager {
 					*/
 					TypeReference<HashMap<String,Object>> valueType = new TypeReference<HashMap<String,Object>>() {};
 					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
-					this.fillValues = new ArrayList<>();
+					fillValues = new ArrayList<>();
 
 					Map<String, Object> keyValueFilters = fileMapper.readValue(filter, valueType);
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
@@ -80,7 +80,7 @@ public class FilterManager {
 							}
 							condition.put(Filter.VALUES, value);
 
-							this.fillValues.add(condition);
+							fillValues.add(condition);
 						});
 					}
 				} catch (IOException e2) {
@@ -95,10 +95,10 @@ public class FilterManager {
 	}
 
 	public List<Filter> getConditions() {
-		if(this.fillValues == null) {
+		if(fillValues == null) {
 			return new ArrayList<Filter>();
 		}
-		return this.fillValues.stream()
+		return fillValues.stream()
 			.map(value -> new Filter(value))
 			.collect(Collectors.toList());
 	}
