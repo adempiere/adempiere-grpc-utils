@@ -10,20 +10,21 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the                     *
  * GNU General Public License for more details.                                     *
  * You should have received a copy of the GNU General Public License                *
- * along with this program.	If not, see <https://www.gnu.org/licenses/>.            *
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
 
 package org.spin.service.grpc.util.query;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.compiere.util.Util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -42,35 +43,62 @@ public class SortingManager {
 	 */
 	@SuppressWarnings("unchecked")
 	private SortingManager(String sorting) {
-		if(Util.isEmpty(sorting)) {
-			fillValues = new ArrayList<>();
+		if(Util.isEmpty(sorting, true)) {
+			this.fillValues = new ArrayList<>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
-				fillValues = fileMapper.readValue(sorting, List.class);
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException("Invalid filter");
+				this.fillValues = fileMapper.readValue(sorting, List.class);
 			} catch (IOException e) {
-				throw new RuntimeException("Invalid filter");
+				// throw new RuntimeException("Invalid filter");
+				try {
+					/*
+						{
+							"C_BPartner_ID": "asc",
+							"C_Invoice": "desc"
+						}
+					*/
+					TypeReference<HashMap<String,String>> valueType = new TypeReference<HashMap<String,String>>() {};
+					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
+					this.fillValues = new ArrayList<>();
+
+					Map<String, String> keyValueFilters = fileMapper.readValue(sorting, valueType);
+					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
+						keyValueFilters.entrySet().forEach(entry -> {
+							Map<String, Object> condition = new HashMap<>();
+							condition.put(Order.NAME, entry.getKey());
+							condition.put(Order.TYPE, Order.ASCENDING);
+							Object value = entry.getValue();
+							if (value != null) {
+								condition.put(Order.TYPE, value);
+							}
+
+							this.fillValues.add(condition);
+						});
+					}
+				} catch (IOException e2) {
+					throw new RuntimeException("Invalid Order");
+				}
 			}
 		}
 	}
-	
+
 	public static SortingManager newInstance(String filters) {
 		return new SortingManager(filters);
 	}
-	
+
 	public List<Order> getSorting() {
-		if(fillValues == null) {
+		if(this.fillValues == null) {
 			return new ArrayList<Order>();
 		}
-		return fillValues.stream().map(value -> new Order(value))
-				.collect(Collectors.toList());
+		return this.fillValues.stream()
+			.map(value -> new Order(value))
+			.collect(Collectors.toList());
 	}
-	
+
 	public String getSotingAsSQL() {
 		StringBuffer sortingAsSQL = new StringBuffer();
-		getSorting().forEach(sotring -> {
+		this.getSorting().forEach(sotring -> {
 			if(sortingAsSQL.length() > 0) {
 				sortingAsSQL.append(", ");
 			}
@@ -83,11 +111,20 @@ public class SortingManager {
 		});
 		return sortingAsSQL.toString();
 	}
-	
+
 	public static void main(String[] args) {
-		SortingManager.newInstance("[{\"name\":\"Name\", \"type\":\"asc\"}, {\"name\":\"Value\", \"type\":\"desc\"}]")
-		.getSorting().forEach(sort -> {
-			System.out.println(sort);
-		});
+		String completeSorting = "[{\"name\":\"Name\", \"type\":\"asc\"}, {\"name\":\"Value\", \"type\":\"desc\"}]";
+		SortingManager.newInstance(completeSorting)
+			.getSorting().forEach(sort -> {
+				System.out.println(sort);
+			})
+		;
+		String simplySorting = "{\"Name\":\"asc\", \"Value\":\"desc\"}";
+		SortingManager.newInstance(simplySorting)
+			.getSorting().forEach(sort -> {
+				System.out.println(sort);
+			})
+		;
 	}
+
 }

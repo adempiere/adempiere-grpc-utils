@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the                     *
  * GNU General Public License for more details.                                     *
  * You should have received a copy of the GNU General Public License                *
- * along with this program.	If not, see <https://www.gnu.org/licenses/>.            *
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
 
 package org.spin.service.grpc.util.query;
@@ -28,21 +28,21 @@ public class Order {
 	//	
 	public static final String NAME = "name";
 	public static final String TYPE = "type";
-	
-	private Map<String, Object> condition;
-	
-	public Order(Map<String, Object> condition) {
-		this.condition = condition;
+
+	private Map<String, Object> order;
+
+	public Order(Map<String, Object> newOrder) {
+		this.order = newOrder;
 	}
-	
+
 	public String getColumnName() {
-		return (String) condition.get(NAME);
+		return (String) this.order.get(NAME);
 	}
-	
+
 	public String getSortType() {
-		return (String) condition.get(TYPE);
+		return (String) this.order.get(TYPE);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Order [getColumnName()=" + getColumnName() + ", getSortType()=" + getSortType() + "]";
