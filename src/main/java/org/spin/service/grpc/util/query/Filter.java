@@ -49,8 +49,8 @@ public class Filter {
 
 	private Map<String, Object> condition;
 
-	public Filter(Map<String, Object> condition) {
-		this.condition = condition;
+	public Filter(Map<String, Object> newCondition) {
+		condition = newCondition;
 	}
 
 	public void setColumnName(String columnName) {
@@ -58,11 +58,19 @@ public class Filter {
 	}
 
 	public String getColumnName() {
-		return (String) condition.get(NAME);
+		Object key = condition.get(NAME);
+		if (key == null) {
+			return null;
+		}
+		return (String) key;
 	}
 
 	public String getOperator() {
-		return (String) condition.get(OPERATOR);
+		Object operator = condition.get(OPERATOR);
+		if (operator == null) {
+			return null;
+		}
+		return (String) operator;
 	}
 
 	public Object getValue() {
@@ -72,6 +80,9 @@ public class Filter {
 	@SuppressWarnings("unchecked")
 	public List<Object> getValues() {
 		Object value = condition.get(VALUES);
+		if (value == null) {
+			return null;
+		}
 		if(value instanceof List) {
 			return (List<Object>) value;
 		}
@@ -96,9 +107,10 @@ public class Filter {
 
 	@Override
 	public String toString() {
-		return "Filter [getColumnName()=" + getColumnName() + ", getOperator()=" + getOperator() + ", getValue()="
-				+ getValue() + ", getValues()=" + getValues() + ", getFromValue()=" + getFromValue() + ", getToValue()="
-				+ getToValue() + "]";
+		return "Filter [getColumnName()=" + getColumnName() +
+			", getOperator()=" + getOperator() +
+			", getValue()=" + getValue() + ", getValues()=" + getValues() +
+			", getFromValue()=" + getFromValue() + ", getToValue()=" + getToValue() + "]";
 	}
 
 }
