@@ -90,7 +90,7 @@ public class Filter {
 	}
 
 	public Object getFromValue() {
-		List<Object> values = this.getValues();
+		List<Object> values = getValues();
 		if(values == null || values.isEmpty()) {
 			return null;
 		}
@@ -98,7 +98,7 @@ public class Filter {
 	}
 
 	public Object getToValue() {
-		List<Object> values = this.getValues();
+		List<Object> values = getValues();
 		if(values == null || values.isEmpty() || values.size() > 2) {
 			return null;
 		}
@@ -107,10 +107,10 @@ public class Filter {
 
 	@Override
 	public String toString() {
-		return "Filter [getColumnName()=" + this.getColumnName() +
-			", getOperator()=" + this.getOperator() +
-			", getValue()=" + this.getValue() + ", getValues()=" + this.getValues() +
-			", getFromValue()=" + this.getFromValue() + ", getToValue()=" + this.getToValue() + "]";
+		return "Filter [getColumnName()=" + getColumnName() +
+			", getOperator()=" + getOperator() +
+			", getValue()=" + getValue() + ", getValues()=" + getValues() +
+			", getFromValue()=" + getFromValue() + ", getToValue()=" + getToValue() + "]";
 	}
 
 }
