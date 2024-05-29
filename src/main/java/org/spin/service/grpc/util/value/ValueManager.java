@@ -122,7 +122,7 @@ public class ValueManager {
 			return getValueFromBigDecimal(null);
 		} else if (DisplayType.isDate(referenceId)) {
 			return getValueFromTimestamp(null);
-		} else if (DisplayType.isText(referenceId)) {
+		} else if (DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
 			;
 		} else if (DisplayType.YesNo == referenceId) {
 			return getValueFromBoolean(false);
@@ -431,7 +431,13 @@ public class ValueManager {
 	 * @return
 	 */
 	public static int getIntegerFromValue(Value value) {
-		return (int) value.getNumberValue();
+		int intValue = (int) value.getNumberValue();
+		if (intValue == 0 && value.hasStringValue()) {
+			intValue = NumberManager.getIntFromString(
+				value.getStringValue()
+			);
+		}
+		return intValue;
 	}
 	
 	/**
@@ -469,8 +475,8 @@ public class ValueManager {
 			Integer integerValue = NumberManager.getIntegerFromObject(
 				value
 			);
-			if (integerValue == null && value != null
-				&& (DisplayType.Search == referenceId || DisplayType.Table == referenceId)) {
+			if (integerValue == null && (DisplayType.Search == referenceId || DisplayType.Table == referenceId)) {
+				// no casteable for integer, as `AD_Language`, `EntityType`
 				return getValueFromObject(value);
 			}
 			return getValueFromInteger(integerValue);
@@ -769,10 +775,18 @@ public class ValueManager {
 			return getObjectFromValue(value);
 		}
 		//	Validate values
-		if(isLookup(referenceId)
-				|| DisplayType.isID(referenceId)) {
-			return getObjectFromValue(value);
-		} else if(DisplayType.Integer == referenceId) {
+		if(DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
+			if (DisplayType.Search == referenceId || DisplayType.Table == referenceId) {
+				Object lookupValue = getObjectFromValue(value);
+				try {
+					// casteable for integer, except `AD_Language`, `EntityType`
+					lookupValue = Integer.valueOf(
+						lookupValue.toString()
+					);
+				} catch (Exception e) {
+				}
+				return lookupValue;
+			}
 			return getIntegerFromValue(value);
 		} else if(DisplayType.isNumeric(referenceId)) {
 			return getBigDecimalFromValue(value);
@@ -780,12 +794,13 @@ public class ValueManager {
 			return getBooleanFromValue(value);
 		} else if(DisplayType.isDate(referenceId)) {
 			return getTimestampFromValue(value);
-		} else if(DisplayType.isText(referenceId)) {
+		} else if(DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
 			return getStringFromValue(value);
+		} else if (DisplayType.Button == referenceId) {
+			return getObjectFromValue(value);
 		}
 		//	
-		// TODO: return getObjectFromValue(value);
-		return null;
+		return getObjectFromValue(value);
 	}
 	
 	/**
