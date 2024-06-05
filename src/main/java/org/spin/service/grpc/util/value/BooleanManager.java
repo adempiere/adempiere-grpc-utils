@@ -61,6 +61,22 @@ public class BooleanManager {
 	}
 
 
+	public static boolean getBooleanFromObject(Object value) {
+		boolean dateValue = false;
+		if (value == null) {
+			return dateValue;
+		}
+		if (value instanceof Boolean) {
+			dateValue = (boolean) value;
+		} else if (value instanceof String) {
+			dateValue = BooleanManager.getBooleanFromString(
+				(String) value
+			);
+		}
+		return dateValue;
+	}
+
+
 	public static boolean getBooleanFromString(String stringValue) {
 		if (Util.isEmpty(stringValue, true)) {
 			return false;

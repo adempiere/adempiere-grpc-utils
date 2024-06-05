@@ -209,19 +209,34 @@ public class ParameterUtil {
 				value
 			);
 		} else if (DisplayType.YesNo == displayTypeId) {
-			if (value instanceof String) {
-				transformValue = BooleanManager.getBooleanFromString(
-					(String) value
-				);
-			}
+			transformValue = BooleanManager.getBooleanFromObject(
+				value
+			);
 		} else if (DisplayType.isDate(displayTypeId)) {
 			transformValue = TimeManager.getTimestampFromObject(
 				value
 			);
-		} else if (DisplayType.isText(displayTypeId) || DisplayType.List == displayTypeId) {
-			transformValue = (String) value;
-		} else {
-			transformValue = (String) value;
+		} else if (DisplayType.List == displayTypeId) {
+			transformValue = value.toString();
+			if (value instanceof Boolean) {
+				transformValue = BooleanManager.getBooleanToString(
+					value.toString()
+				);
+			}
+		} else if (DisplayType.isText(displayTypeId)) {
+			transformValue = value.toString();
+		} else if (DisplayType.Button == displayTypeId) {
+			// if (value instanceof Integer || value instanceof Long) {
+			// 	transformValue = NumberManager.getIntegerFromObject(
+			// 		value
+			// 	);
+			// } else if(value instanceof BigDecimal || value instanceof Double) {
+			// 	transformValue = NumberManager.getBigDecimalFromObject(
+			// 		value
+			// 	);
+			// } else if (value instanceof String) {
+			// 	transformValue = value.toString();
+			// }
 		}
 
 		return transformValue;
