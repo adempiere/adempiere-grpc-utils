@@ -645,7 +645,7 @@ public class ValueManager {
 		}
 		values.keySet().forEach(keyValue -> {
 			Value valueBuilder = values.get(keyValue);
-			Object valueItem = getObjectFromValue(valueBuilder);
+			Object valueItem = ValueManager.getObjectFromValue(valueBuilder);
 			convertedValues.put(
 				keyValue,
 				valueItem
@@ -654,7 +654,44 @@ public class ValueManager {
 		//	
 		return convertedValues;
 	}
-	
+
+	/**
+	 * Convert Selection values from gRPC to ADempiere values
+	 * @param values
+	 * @param displayTypeColumns <ColumnName, DisplayType>
+	 * @return
+	 */
+	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values, Map<String, Integer> displayTypeColumns) {
+		Map<String, Object> convertedValues = new HashMap<>();
+		if (values == null || values.size() <= 0) {
+			return convertedValues;
+		}
+		if (displayTypeColumns == null || values.size() <= 0) {
+			return ValueManager.convertValuesMapToObjects(
+				values
+			);
+		}
+		values.keySet().forEach(keyValue -> {
+			Value valueBuilder = values.get(keyValue);
+			Object valueItem = getObjectFromValue(valueBuilder);
+
+			Integer displayType = displayTypeColumns.get(keyValue);
+			if (displayType != null && displayType.intValue() > 0) {
+				valueItem = ValueManager.getObjectFromReference(
+					valueBuilder,
+					displayType.intValue()
+				);
+			}
+
+			convertedValues.put(
+				keyValue,
+				valueItem
+			);
+		});
+		//	
+		return convertedValues;
+	}
+
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
 	 * @param values
