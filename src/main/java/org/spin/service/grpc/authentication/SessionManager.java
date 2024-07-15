@@ -390,6 +390,7 @@ public class SessionManager {
 	 * @return
 	 */
 	private static String getJWT_SecretKey() {
+		// TODO: Verify cache
 		// get by SysConfig client
 		String secretKey = MSysConfig.getValue(
 			JWTUtil.ECA52_JWT_SECRET_KEY,
@@ -577,6 +578,14 @@ public class SessionManager {
 		Env.setContext(context, "#AD_Client_Name", client.getName());
 		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
 		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(language));
+
+		MClientInfo clientInfoSystem = MClientInfo.get(context, 0);
+		String dictionaryCode = "";
+		if (clientInfoSystem.get_ColumnIndex("ECA56_DictionaryCode") >= 0) {
+			dictionaryCode = clientInfoSystem.get_ValueAsString(dictionaryCode);
+		}
+		Env.setContext(context, "#ECA56_DictionaryCode", dictionaryCode);
+
 		//	Role Info
 		MRole role = MRole.get(context, Env.getContextAsInt(context, "#AD_Role_ID"));
 		Env.setContext(context, "#AD_Role_Name", role.getName());
