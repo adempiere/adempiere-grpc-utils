@@ -73,10 +73,10 @@ publishing {
 		mavenLocal()
 
         maven {
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+			url = findProperty("deployPublishUrl") ?: System.properties['deploy.publish_url']
             credentials {
-                username = findProperty("sonatypeUsername")
-                password = findProperty("sonatypePassword")
+				username = findProperty("deployUsername") ?: System.properties['deploy.user']
+				password = findProperty("deployPassword") ?: System.properties['deploy.token']
             }
         }
     }
