@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.compiere.util.Util;
+import org.spin.service.grpc.util.value.ValueManager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,8 +84,11 @@ public class SortingManager {
 		}
 	}
 
-	public static SortingManager newInstance(String filters) {
-		return new SortingManager(filters);
+	public static SortingManager newInstance(String sortings) {
+		final String decodeSortings = ValueManager.getDecodeUrl(
+			sortings
+		);
+		return new SortingManager(decodeSortings);
 	}
 
 	public List<Order> getSorting() {
