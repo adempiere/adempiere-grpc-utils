@@ -131,8 +131,8 @@ signing {
 			it.equals(PublishToMavenRepository)
 		}
 	}
-	def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
+	def signingKey = findProperty("deployUsername")
+    def signingPassword = findProperty("deployPassword")
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.mavenJava
 }
