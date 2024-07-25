@@ -5,9 +5,8 @@ plugins {
 }
 
 sourceCompatibility = 1.11
-
-def baseVersion = System.getenv("ADEMPIERE_BASE_VERSION") ?: '3.9.4'
-def baseGroupId = System.getenv("ADEMPIERE_BASE_GROUP") ?: 'io.github.adempiere'
+def baseVersion = '3.9.4'
+def baseGroupId = 'io.github.adempiere'
 def grpcVersion = '1.62.2'
 
 repositories {
@@ -55,8 +54,8 @@ java {
 
 
 def entityType = 'D'
-group = System.getenv("ADEMPIERE_PUBLISH_GROUP") ?: "io.github.adempiere"
-version = System.getenv("ADEMPIERE_LIBRARY_VERSION") ?: "local-1.0.0"
+group = "io.github.adempiere"
+version = findProperty("deployVersion") ?: "local-1.0.0"
 
 jar {
 	manifest {
@@ -73,10 +72,10 @@ publishing {
 		mavenLocal()
 
         maven {
-			url = findProperty("deployPublishUrl") ?: System.properties['deploy.publish_url']
+            url = findProperty("deployPublishUrl") ?: System.properties['deploy.publish_url']
             credentials {
-				username = findProperty("deployUsername") ?: System.properties['deploy.user']
-				password = findProperty("deployPassword") ?: System.properties['deploy.token']
+                username = findProperty("deployUsername") ?: System.properties['deploy.user']
+                password = findProperty("deployPassword") ?: System.properties['deploy.token']
             }
         }
     }
@@ -131,8 +130,8 @@ signing {
 			it.equals(PublishToMavenRepository)
 		}
 	}
-	def signingKey = findProperty("deployUsername")
-    def signingPassword = findProperty("deployPassword")
+	def signingKey = findProperty("deploySigningKey")
+    def signingPassword = findProperty("deploySigningPassword")
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.mavenJava
 }

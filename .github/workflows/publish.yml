@@ -40,7 +40,6 @@ jobs:
           ORG_GRADLE_PROJECT_deploySigningPassword: ${{ secrets.PGP_PASSPHRASE }}
           ORG_GRADLE_PROJECT_deployUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_deployPassword: ${{ secrets.OSSRH_TOKEN }}
-
   publish-github:
     name: Publish Project (Github)
     runs-on: ubuntu-latest
