@@ -28,6 +28,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import org.adempiere.core.domains.models.I_C_Order;
 import org.compiere.model.MLookup;
@@ -50,6 +51,7 @@ import com.google.protobuf.Value;
 /**
  * Class for handle Values from and to client
  * @author Yamel Senih, ysenih@erpya.com , http://www.erpya.com
+ * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
 public class ValueManager {
 
@@ -454,7 +456,7 @@ public class ValueManager {
 
 		return value.getBoolValue();
 	}
-	
+
 	/**
 	 * Get Value from reference
 	 * @param value
@@ -523,7 +525,24 @@ public class ValueManager {
 		return builderValue;
 	}
 
+
+	/**
+	 * Get Display Value from reference
+	 * @param value
+	 * @param columnName data base column name
+	 * @param displayTypeId display type of field
+	 * @param referenceValueId reference of list or table
+	 * @return
+	 */
 	public static String getDisplayedValueFromReference(Object value, String columnName, int displayTypeId, int referenceValueId) {
+		return getDisplayedValueFromReference(
+			Env.getCtx(),
+			columnName,
+			displayTypeId,
+			referenceValueId
+		);
+	}
+	public static String getDisplayedValueFromReference(Properties context, Object value, String columnName, int displayTypeId, int referenceValueId) {
 		String displayedValue = null;
 		if (value == null) {
 			return displayedValue;
@@ -531,16 +550,22 @@ public class ValueManager {
 		if (displayTypeId <= 0) {
 			return displayedValue;
 		}
-		if (DisplayType.isText (displayTypeId)) {
+		if (context == null) {
+			context = Env.getCtx();
+		}
+		if (DisplayType.isText(displayTypeId)) {
 			;
 		} else if (displayTypeId == DisplayType.YesNo) {
 			displayedValue = BooleanManager.getBooleanToTranslated(
-				value.toString()
+				value.toString(),
+				Env.getAD_Language(context)
 			);
 		} else if (displayTypeId == DisplayType.Integer) {
+			// necessary condition do not to enter the condition for decimal struct
+			Language language = Env.getLanguage(context);
 			DecimalFormat intFormat = DisplayType.getNumberFormat(
 				DisplayType.Integer,
-				Env.getLanguage(Env.getCtx())
+				language
 			);
 			displayedValue = intFormat.format(
 				Integer.valueOf(value.toString())
@@ -557,9 +582,10 @@ public class ValueManager {
 					System.currentTimeMillis() - longValue
 				);
 			} else {
+				Language language = Env.getLanguage(context);
 				DecimalFormat numberFormat = DisplayType.getNumberFormat(
 					displayTypeId,
-					Env.getLanguage(Env.getCtx())
+					language
 				);
 				displayedValue = numberFormat.format(
 					NumberManager.getBigDecimalFromString(
@@ -568,9 +594,11 @@ public class ValueManager {
 				);
 			}
 		} else if (DisplayType.isDate(displayTypeId)) {
+			Language language = Env.getLanguage(context);
 			SimpleDateFormat dateTimeFormat = DisplayType.getDateFormat(
 				DisplayType.DateTime,
-				Env.getLanguage(Env.getCtx())
+				// displayTypeId,
+				language
 			);
 			displayedValue = dateTimeFormat.format(
 				Timestamp.valueOf(
@@ -578,22 +606,27 @@ public class ValueManager {
 				)
 			);
 		} else if (DisplayType.isLookup(displayTypeId) && displayTypeId != DisplayType.Button && displayTypeId != DisplayType.List) {
-			Language language = Env.getLanguage(Env.getCtx());
-			MLookupInfo lookupInfo = MLookupFactory.getLookupInfo(Env.getCtx(), 0, 0, displayTypeId, language, columnName, referenceValueId, false, null, false);
+			Language language = Env.getLanguage(context);
+			MLookupInfo lookupInfo = MLookupFactory.getLookupInfo(
+				context, 0,
+				0, displayTypeId, language, columnName,
+				referenceValueId, false,
+				null, false
+			);
 			MLookup lookup = new MLookup(lookupInfo, 0);
 			NamePair pp = lookup.get(value);
 			if (pp != null) {
 				displayedValue = pp.getName();
 			}
 		} else if((DisplayType.Button == displayTypeId || DisplayType.List == displayTypeId) && referenceValueId != 0) {
+			Language language = Env.getLanguage(context);
 			MLookupInfo lookupInfo = MLookupFactory.getLookup_List(
-				Env.getLanguage(Env.getCtx()),
+				language,
 				referenceValueId
 			);
-
 			MLookup lookup = new MLookup(lookupInfo, 0);
 			if (value != null) {
-				Object key = value; 
+				Object key = value;
 				NamePair pp = lookup.get(key);
 				if (pp != null) {
 					displayedValue = pp.getName();
