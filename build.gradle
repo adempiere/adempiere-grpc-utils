@@ -57,7 +57,7 @@ java {
 
 def entityType = 'D'
 group = "io.github.adempiere"
-version = findProperty("deployVersion") ?: "local-1.0.1"
+version = findProperty("deployVersion") ?: "local-1.0.0"
 
 jar {
 	manifest {
