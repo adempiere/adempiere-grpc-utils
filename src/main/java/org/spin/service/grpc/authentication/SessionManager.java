@@ -15,11 +15,11 @@
  *************************************************************************************/
 package org.spin.service.grpc.authentication;
 
-import java.security.Key;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
+
+import javax.crypto.SecretKey;
 
 import org.adempiere.core.domains.models.I_AD_Language;
 import org.adempiere.core.domains.models.I_AD_Session;
@@ -64,10 +66,9 @@ import org.spin.util.TokenGeneratorHandler;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 /**
@@ -151,15 +152,15 @@ public class SessionManager {
 		return defaultLanguage;
 	}
 
-	public static void loadValuesWithClaims(Claims claimsBody) {
-		if (claimsBody == null || claimsBody.isEmpty()) {
+	public static void loadValuesWithClaims(Claims claimsPayload) {
+		if (claimsPayload == null || claimsPayload.isEmpty()) {
 			throw new AdempiereException("Claims.Body @NotFound@");
 		}
-		SessionManager.userId = claimsBody.get("AD_User_ID", Integer.class);
-		SessionManager.roleId = claimsBody.get("AD_Role_ID", Integer.class);
-		SessionManager.organizationId = claimsBody.get("AD_Org_ID", Integer.class);
-		SessionManager.warehouseId = claimsBody.get("M_Warehouse_ID", Integer.class);
-		SessionManager.language = claimsBody.get("AD_Language", String.class);
+		SessionManager.userId = claimsPayload.get("AD_User_ID", Integer.class);
+		SessionManager.roleId = claimsPayload.get("AD_Role_ID", Integer.class);
+		SessionManager.organizationId = claimsPayload.get("AD_Org_ID", Integer.class);
+		SessionManager.warehouseId = claimsPayload.get("M_Warehouse_ID", Integer.class);
+		SessionManager.language = claimsPayload.get("AD_Language", String.class);
 	}
 
 	public static void loadValuesWithMADToken(MADToken token) {
@@ -226,16 +227,20 @@ public class SessionManager {
 		boolean isNewSession = false;
 		int sessionId = getSessionIdByOpenID(tokenValue);
 		if (sessionId <= 0) {
+			SecretKey secretKey = getJWT_SecretKey();
 			//	Validate if is token based
-			JwtParser parser = Jwts.parserBuilder().setSigningKey(
-				getJWT_SecretKey()
-			).build();
-			Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
+			JwtParser parser = Jwts.parser()
+				.verifyWith(secretKey)
+				.build()
+			;
+			Jws<Claims> claims = parser.parseSignedClaims(tokenValue);
 			sessionId = NumberManager.getIntFromString(
-				claims.getBody().getId()
+				claims.getPayload().getId()
 			);
 			if (sessionId > 0) {
-				loadValuesWithClaims(claims.getBody());
+				loadValuesWithClaims(
+					claims.getPayload()
+				);
 			} else {
 				MADToken token = createSessionFromToken(tokenValue);
 				if(Optional.ofNullable(token).isPresent()) {
@@ -389,7 +394,7 @@ public class SessionManager {
 	 * Get JWT Secrect Key generates with HMAC-SHA algorithms
 	 * @return
 	 */
-	private static String getJWT_SecretKey() {
+	private static String getJWT_SecretKeyAsString() {
 		// get by SysConfig client
 		String secretKey = MSysConfig.getValue(
 			JWTUtil.ECA52_JWT_SECRET_KEY,
@@ -410,6 +415,14 @@ public class SessionManager {
 		}
 		return secretKey;
 	}
+	private static SecretKey getJWT_SecretKey() {
+		byte[] keyBytes = Base64.getDecoder().decode(
+			getJWT_SecretKeyAsString()
+		);
+		SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
+		return secretKey;
+	}
+
 
 	/**
 	 * Create token as bearer
@@ -422,27 +435,28 @@ public class SessionManager {
 		MUser user = MUser.get(session.getCtx(), session.getCreatedBy());
 		long sessionTimeout = getSessionTimeout(user);
 
-		byte[] keyBytes = Decoders.BASE64.decode(
-			getJWT_SecretKey()
-		);
-		Key key = Keys.hmacShaKeyFor(keyBytes);
-		return Jwts.builder()
-			.setId(String.valueOf(session.getAD_Session_ID()))
+		SecretKey secretKey = getJWT_SecretKey();
+		JwtBuilder jwtBuilder = Jwts.builder()
+			.id(String.valueOf(session.getAD_Session_ID()))
+			// .claims()
 			.claim("AD_Client_ID", session.getAD_Client_ID())
 			.claim("AD_Org_ID", session.getAD_Org_ID())
 			.claim("AD_Role_ID", session.getAD_Role_ID())
 			.claim("AD_User_ID", session.getCreatedBy())
 			.claim("M_Warehouse_ID", warehouseId)
 			.claim("AD_Language", language)
-			.setIssuedAt(
-				new Date(System.currentTimeMillis())
+			.issuedAt(
+				new Date()
 			)
-			.setExpiration(
-				new Date(System.currentTimeMillis() + sessionTimeout)
+			.expiration(
+				new Date(
+					System.currentTimeMillis() + sessionTimeout
+				)
 			)
-			.signWith(key, SignatureAlgorithm.HS256)
-			.compact()
+			.signWith(secretKey, Jwts.SIG.HS256)
 		;
+
+		return jwtBuilder.compact();
 	}
 
 	/**
