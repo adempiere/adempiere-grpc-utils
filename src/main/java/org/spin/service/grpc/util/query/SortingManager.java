@@ -17,6 +17,7 @@ package org.spin.service.grpc.util.query;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,9 +35,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * [{"name":"Name", "type":"asc"}, {"name":"Value", "type":"desc"}]
  */
 public class SortingManager {
-	
-	private List<Map<String, String>> fillValues;
-	
+
+	private List<Map<String, String>> fillValues = new ArrayList<>();;
+
 	/**
 	 * read filters and convert to stub
 	 * @param sorting
@@ -45,11 +46,17 @@ public class SortingManager {
 	@SuppressWarnings("unchecked")
 	private SortingManager(String sorting) {
 		if(Util.isEmpty(sorting, true)) {
-			fillValues = new ArrayList<>();
+			this.fillValues = new ArrayList<>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
-				fillValues = fileMapper.readValue(sorting, List.class);
+				/*
+					[
+						{"name: "C_BPartner_ID", "type": "asc"},
+						{"name": "C_Invoice", "type": "desc"}
+					]
+				*/
+				this.fillValues = fileMapper.readValue(sorting, List.class);
 			} catch (IOException e) {
 				// throw new RuntimeException("Invalid filter");
 				try {
@@ -61,24 +68,48 @@ public class SortingManager {
 					*/
 					TypeReference<HashMap<String,String>> valueType = new TypeReference<HashMap<String,String>>() {};
 					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
-					fillValues = new ArrayList<>();
-
 					Map<String, String> keyValueFilters = fileMapper.readValue(sorting, valueType);
+					
+					this.fillValues = new ArrayList<>();
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
 						keyValueFilters.entrySet().forEach(entry -> {
 							Map<String, String> condition = new HashMap<>();
 							condition.put(Order.NAME, entry.getKey());
 							condition.put(Order.TYPE, Order.ASCENDING);
-							Object value = entry.getValue();
-							if (value != null) {
-								condition.put(Order.TYPE, value.toString());
+							String sortType = entry.getValue();
+							if (Util.isEmpty(sortType, true)) {
+								condition.put(Order.TYPE, sortType);
 							}
-
-							fillValues.add(condition);
+							this.fillValues.add(condition);
 						});
 					}
 				} catch (IOException e2) {
-					throw new RuntimeException("Invalid Order");
+					/**
+						"DisplayColumn_C_BPartner_ID ASC, DocumentNo DESC"
+					 */
+					this.fillValues = new ArrayList<>();
+
+					// throw new RuntimeException("Invalid Order");
+					List<String> sortColumns = Arrays.asList(sorting.split("\\s*,\\s*"));
+					sortColumns.forEach(sortCondition -> {
+						Map<String, String> condition = new HashMap<>();
+	
+						List<String> sortValues = Arrays.asList(sortCondition.split("\\s"));
+						String columnName = sortValues.get(0).trim();
+						condition.put(Order.NAME, columnName);
+						// default order type is ASC
+						condition.put(Order.TYPE, Order.ASCENDING);
+
+						if (sortValues.size() > 1) {
+							String sortType = sortValues.get(1).trim().toLowerCase();
+							// change order type is DESC
+							if (sortType.equals(Order.DESCENDING)) {
+								condition.put(Order.TYPE, Order.DESCENDING);
+							}
+						}
+
+						this.fillValues.add(condition);
+					});
 				}
 			}
 		}
@@ -106,7 +137,11 @@ public class SortingManager {
 			if(sortingAsSQL.length() > 0) {
 				sortingAsSQL.append(", ");
 			}
-			sortingAsSQL.append(sotring.getColumnName());
+			String columnName = sotring.getColumnName();
+			if (columnName.startsWith("DisplayColumn")) {
+				columnName = "\"" + columnName + "\"";
+			}
+			sortingAsSQL.append(columnName);
 			if(sotring.getSortType().equals(Order.ASCENDING)) {
 				sortingAsSQL.append(" ASC");
 			} else if(sotring.getSortType().equals(Order.DESCENDING)) {
@@ -117,13 +152,22 @@ public class SortingManager {
 	}
 
 	public static void main(String[] args) {
-		String completeSorting = "[{\"name\":\"Name\", \"type\":\"asc\"}, {\"name\":\"Value\", \"type\":\"desc\"}]";
+		// TODO: Add support to DisplayType to DisplayColumn
+		String completeSorting = "[{\"name\":\"Name\", \"type\":\"asc\"}, {\"name\":\"Description\", \"type\":\"desc\"}]";
 		SortingManager.newInstance(completeSorting)
 			.getSorting().forEach(sort -> {
 				System.out.println(sort);
 			})
 		;
-		String simplySorting = "{\"Name\":\"asc\", \"Value\":\"desc\"}";
+
+		String basicSorting = "{\"Name\":\"asc\", \"Description\":\"desc\"}";
+		SortingManager.newInstance(basicSorting)
+			.getSorting().forEach(sort -> {
+				System.out.println(sort);
+			})
+		;
+
+		String simplySorting = "Name ASC, Description DESC";
 		SortingManager.newInstance(simplySorting)
 			.getSorting().forEach(sort -> {
 				System.out.println(sort);
