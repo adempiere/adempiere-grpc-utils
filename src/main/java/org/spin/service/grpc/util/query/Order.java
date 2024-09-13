@@ -24,7 +24,7 @@ import java.util.Map;
 public class Order {
 
 	public static final String ASCENDING = "asc";
-	public static final String DESCENDING = "des";
+	public static final String DESCENDING = "desc";
 	//	
 	public static final String NAME = "name";
 	public static final String TYPE = "type";
@@ -47,4 +47,5 @@ public class Order {
 	public String toString() {
 		return "Order [getColumnName()=" + getColumnName() + ", getSortType()=" + getSortType() + "]";
 	}
+
 }
