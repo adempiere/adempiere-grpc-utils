@@ -21,7 +21,7 @@ import org.compiere.util.Ini;
  * @author Yamel Senih
  *
  */
-public class DatabaseConfig {
+public class BackendDatabaseConfig {
 	public static final String CONFIG_DB_IDLE_TIMEOUT = "DB|CONFIG_DB_IDLE_TIMEOUT";
 	public static final String CONFIG_DB_MINIMUM_IDLE = "DB|CONFIG_DB_MINIMUM_IDLE";
 	public static final String CONFIG_DB_MAXIMUM_POOL_SIZE = "DB|CONFIG_DB_MAXIMUM_POOL_SIZE";
@@ -55,7 +55,7 @@ public class DatabaseConfig {
 	}
 	
 	public static void setMaximumPoolSize(int value) {
-		if(value >= 0) {
+		if(value > 0) {
 			Ini.setProperty(CONFIG_DB_MAXIMUM_POOL_SIZE, String.valueOf(value));
 		}
 	}
