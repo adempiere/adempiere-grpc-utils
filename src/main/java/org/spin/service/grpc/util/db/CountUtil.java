@@ -28,7 +28,7 @@ import org.compiere.util.DB;
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
 public class CountUtil {
-
+	
 	/**
 	 * Count records
 	 * @param sql
@@ -37,9 +37,20 @@ public class CountUtil {
 	 * @return
 	 */
 	public static int countRecords(String sql, String tableName, List<Object> parameters) {
-		return countRecords(sql, tableName, null, parameters);
+		return countRecords(sql, tableName, parameters, null);
 	}
 
+	/**
+	 * Count records using transaction name
+	 * @param sql
+	 * @param tableName
+	 * @param parameters
+	 * @return
+	 */
+	public static int countRecords(String sql, String tableName, List<Object> parameters, String transactionName) {
+		return countRecords(sql, tableName, null, parameters, transactionName);
+	}
+	
 	/**
 	 * Count records
 	 * @param sql
@@ -49,6 +60,18 @@ public class CountUtil {
 	 * @return
 	 */
 	public static int countRecords(String sql, String tableName, String tableNameAlias, List<Object> parameters) {
+		return countRecords(sql, tableName, null, parameters, null);
+	}
+
+	/**
+	 * Count records using transaction name
+	 * @param sql
+	 * @param tableName
+	 * @param tableNameAlias
+	 * @param parameters
+	 * @return
+	 */
+	public static int countRecords(String sql, String tableName, String tableNameAlias, List<Object> parameters, String transactionName) {
 		// tableName tableName, tableName AS tableName
 		String tableWithAliases = FromUtil.getPatternTableName(tableName, tableNameAlias);
 
@@ -106,7 +129,7 @@ public class CountUtil {
 			parameters = new ArrayList<Object>();
 		}
 
-		return DB.getSQLValueEx(null, queryCount, parameters);
+		return DB.getSQLValueEx(transactionName, queryCount, parameters);
 	}
 
 }

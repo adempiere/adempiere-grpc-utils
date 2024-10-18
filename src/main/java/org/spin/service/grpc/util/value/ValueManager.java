@@ -15,7 +15,6 @@
  *************************************************************************************/
 package org.spin.service.grpc.util.value;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -660,7 +659,7 @@ public class ValueManager {
 			e.printStackTrace();
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return fillValues;
