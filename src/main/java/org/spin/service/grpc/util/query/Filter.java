@@ -92,7 +92,7 @@ public class Filter {
 	public Object getFromValue() {
 		List<Object> values = getValues();
 		if(values == null || values.isEmpty()) {
-			return null;
+			return getValue();
 		}
 		return values.get(FROM);
 	}
