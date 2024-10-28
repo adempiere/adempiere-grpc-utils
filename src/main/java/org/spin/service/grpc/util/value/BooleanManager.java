@@ -99,21 +99,6 @@ public class BooleanManager {
 			getBooleanFromString(value)
 		);
 	}
-	/**
-	 * @deprecated
-	 * @see {@link BooleanManager.getBooleanToTranslated(String)}
-	 * @param value
-	 * @param translated
-	 * @return
-	 */
-	public static String getBooleanToString(String value, boolean translated) {
-		if (translated) {
-			return getBooleanToTranslated(value);
-		}
-		return getBooleanToString(
-			getBooleanFromString(value)
-		);
-	}
 	public static String getBooleanToString(boolean value) {
 		String convertedValue = "N";
 		if (value) {

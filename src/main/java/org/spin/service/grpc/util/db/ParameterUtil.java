@@ -31,6 +31,7 @@ import org.compiere.util.DB;
 import org.compiere.util.DisplayType;
 import org.spin.service.grpc.util.value.BooleanManager;
 import org.spin.service.grpc.util.value.NumberManager;
+import org.spin.service.grpc.util.value.StringManager;
 import org.spin.service.grpc.util.value.TimeManager;
 import org.spin.service.grpc.util.value.ValueManager;
 
@@ -200,10 +201,20 @@ public class ParameterUtil {
 		if (value == null) {
 			return transformValue;
 		}
+		if (displayTypeId <= 0) {
+			return transformValue;
+		}
 		if (DisplayType.isID(displayTypeId) || DisplayType.Integer == displayTypeId) {
-			transformValue = NumberManager.getIntegerFromObject(
+			Integer integerValue = NumberManager.getIntegerFromObject(
 				value
 			);
+			transformValue = integerValue;
+			if (integerValue == null && (DisplayType.Search == displayTypeId || DisplayType.Table == displayTypeId)) {
+				// no casteable for integer, as `AD_Language`, `EntityType`
+				transformValue = StringManager.getStringFromObject(
+					value
+				);
+			}
 		} else if (DisplayType.isNumeric(displayTypeId)) {
 			transformValue = NumberManager.getBigDecimalFromObject(
 				value
@@ -217,14 +228,18 @@ public class ParameterUtil {
 				value
 			);
 		} else if (DisplayType.List == displayTypeId) {
-			transformValue = value.toString();
+			transformValue = StringManager.getStringFromObject(
+				value
+			);
 			if (value instanceof Boolean) {
 				transformValue = BooleanManager.getBooleanToString(
 					value.toString()
 				);
 			}
 		} else if (DisplayType.isText(displayTypeId)) {
-			transformValue = value.toString();
+			transformValue = StringManager.getStringFromObject(
+				value
+			);
 		} else if (DisplayType.Button == displayTypeId) {
 			// if (value instanceof Integer || value instanceof Long) {
 			// 	transformValue = NumberManager.getIntegerFromObject(
