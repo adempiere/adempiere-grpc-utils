@@ -26,7 +26,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 import org.adempiere.core.domains.models.I_C_Order;
@@ -167,7 +166,9 @@ public class ValueManager {
 			return getValueFromNull();
 		}
 		return Value.newBuilder().setStringValue(
-			validateNull(value)
+			StringManager.getValidString(
+				value
+			)
 		);
 	}
 
@@ -339,8 +340,12 @@ public class ValueManager {
 			if(type == null || value == null) {
 				return null;
 			}
-			String validType = Optional.ofNullable(type.getStringValue()).orElse("");
-			String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
+			String validType = StringManager.getValidString(
+				type.getStringValue()
+			);
+			String validValue = StringManager.getValidString(
+				value.getStringValue()
+			);
 			if((!validType.equals(TYPE_DATE)
 					&& !validType.equals(TYPE_DATE_TIME))
 					|| validValue.length() == 0) {
@@ -398,7 +403,14 @@ public class ValueManager {
 	}
 
 
-
+	/**
+	 * Get String from a value
+	 * @param value
+	 * @return
+	 */
+	public static String getStringFromValue(Value value) {
+		return getStringFromValue(value, false);
+	}
 	/**
 	 * Get String from a value
 	 * @param value
@@ -416,16 +428,8 @@ public class ValueManager {
 		}
 		return stringValue;
 	}
-	
-	/**
-	 * Get String from a value
-	 * @param value
-	 * @return
-	 */
-	public static String getStringFromValue(Value value) {
-		return getStringFromValue(value, false);
-	}
-	
+
+
 	/**
 	 * Get integer from a value
 	 * @param value
@@ -488,7 +492,10 @@ public class ValueManager {
 			return getValueFromBigDecimal(bigDecimalValue);
 		} else if(DisplayType.YesNo == referenceId) {
 			if (value instanceof String) {
-				return getValueFromStringBoolean((String) value);
+				String stringValue = StringManager.getStringFromObject(
+					value
+				);
+				return getValueFromStringBoolean(stringValue);
 			}
 			return getValueFromBoolean((Boolean) value);
 		} else if(DisplayType.isDate(referenceId)) {
@@ -497,7 +504,12 @@ public class ValueManager {
 			);
 			return getValueFromTimestamp(dateValue);
 		} else if(DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
-			return getValueFromString((String) value);
+			String stringValue = StringManager.getStringFromObject(
+				value
+			);
+			return getValueFromString(
+				stringValue
+			);
 		} else if (DisplayType.Button == referenceId) {
 			if (value instanceof Integer) {
 				return getValueFromInteger((Integer) value);
@@ -512,8 +524,11 @@ public class ValueManager {
 				);
 				return getValueFromInteger(bigDecimalValue);
 			} else if (value instanceof String) {
+				String stringValue = StringManager.getStringFromObject(
+					value
+				);
 				return getValueFromString(
-					(String) value
+					stringValue
 				);
 			}
 			return getValueFromObject(value);
@@ -690,7 +705,7 @@ public class ValueManager {
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
 	 * @param values
-	 * @param displayTypeColumns <ColumnName, DisplayType>
+	 * @param displayTypeColumns Map(ColumnName, DisplayType)
 	 * @return
 	 */
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values, Map<String, Integer> displayTypeColumns) {
@@ -803,7 +818,9 @@ public class ValueManager {
 		if(type == null) {
 			return false;
 		}
-		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+		String validType = StringManager.getValidString(
+			type.getStringValue()
+		);
 		return validType.equals(TYPE_DATE) || validType.equals(TYPE_DATE_TIME);
 	}
 	
@@ -824,9 +841,9 @@ public class ValueManager {
 		if(type == null) {
 			return false;
 		}
-		String validType = Optional.ofNullable(
+		String validType = StringManager.getValidString(
 			type.getStringValue()
-		).orElse("");
+		);
 		return validType.equals(TYPE_DECIMAL);
 	}
 	
@@ -888,14 +905,13 @@ public class ValueManager {
 	/**
 	 * Convert null on ""
 	 * @param value
+	 * @deprecated Use {@link StringManager#getValidString()} instead.
 	 * @return
 	 */
 	public static String validateNull(String value) {
-		if(value == null) {
-			value = "";
-		}
-		//	
-		return value;
+		return StringManager.getValidString(
+			value
+		);
 	}
 
 
