@@ -45,6 +45,7 @@ public class CountUtil {
 	 * @param sql
 	 * @param tableName
 	 * @param parameters
+	 * @param transactionName
 	 * @return
 	 */
 	public static int countRecords(String sql, String tableName, List<Object> parameters, String transactionName) {
@@ -60,7 +61,7 @@ public class CountUtil {
 	 * @return
 	 */
 	public static int countRecords(String sql, String tableName, String tableNameAlias, List<Object> parameters) {
-		return countRecords(sql, tableName, null, parameters, null);
+		return countRecords(sql, tableName, tableNameAlias, parameters, null);
 	}
 
 	/**
@@ -69,6 +70,7 @@ public class CountUtil {
 	 * @param tableName
 	 * @param tableNameAlias
 	 * @param parameters
+	 * @param transactionName
 	 * @return
 	 */
 	public static int countRecords(String sql, String tableName, String tableNameAlias, List<Object> parameters, String transactionName) {
