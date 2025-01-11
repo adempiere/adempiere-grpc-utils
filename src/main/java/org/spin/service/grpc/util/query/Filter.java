@@ -68,7 +68,8 @@ public class Filter {
 	public String getOperator() {
 		Object operator = condition.get(OPERATOR);
 		if (operator == null) {
-			return null;
+			// assumes the default operator
+			return EQUAL;
 		}
 		return (String) operator;
 	}

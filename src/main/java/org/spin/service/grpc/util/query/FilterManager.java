@@ -73,13 +73,19 @@ public class FilterManager {
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
 						keyValueFilters.entrySet().forEach(entry -> {
 							Map<String, Object> condition = new HashMap<>();
+
+							// set column name as key filter
 							condition.put(Filter.NAME, entry.getKey());
-							condition.put(Filter.OPERATOR, OperatorUtil.EQUAL);
+
+							// set value filter
 							Object value = entry.getValue();
+							condition.put(Filter.VALUES, value);
+
+							// set operator filter
+							condition.put(Filter.OPERATOR, OperatorUtil.EQUAL);
 							if (value != null && value instanceof List) {
 								condition.put(Filter.OPERATOR, OperatorUtil.IN);
 							}
-							condition.put(Filter.VALUES, value);
 
 							fillValues.add(condition);
 						});
