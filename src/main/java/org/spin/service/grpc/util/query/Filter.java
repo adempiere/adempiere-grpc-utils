@@ -15,6 +15,7 @@
 
 package org.spin.service.grpc.util.query;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +57,6 @@ public class Filter {
 	public void setColumnName(String columnName) {
 		condition.put(NAME, columnName);
 	}
-
 	public String getColumnName() {
 		Object key = condition.get(NAME);
 		if (key == null) {
@@ -65,6 +65,9 @@ public class Filter {
 		return (String) key;
 	}
 
+	public void setOperator(String operator) {
+		this.condition.put(OPERATOR, operator);
+	}
 	public String getOperator() {
 		Object operator = condition.get(OPERATOR);
 		if (operator == null) {
@@ -74,6 +77,9 @@ public class Filter {
 		return (String) operator;
 	}
 
+	public void setValue(Object value) {
+		this.condition.put(VALUES, value);
+	}
 	public Object getValue() {
 		return condition.get(VALUES);
 	}
@@ -90,6 +96,27 @@ public class Filter {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
+	private List<Object> getOrCreateValuesList() {
+		Object values = condition.get(VALUES);
+		List<Object> valuesList;
+		if (values instanceof List) {
+			valuesList = (List<Object>) values;
+		} else {
+			valuesList = new ArrayList<Object>();
+		}
+		// Ensure that the list has at least two elements
+		while (valuesList.size() < 2) {
+			valuesList.add(null); // Prevent out-of-bounds index
+		}
+		return valuesList;
+	}
+
+	public void setFromValue(Object valueFrom) {
+		List<Object> valuesList = getOrCreateValuesList();
+		valuesList.set(FROM, valueFrom);
+		this.condition.put(VALUES, valuesList);
+	}
 	public Object getFromValue() {
 		List<Object> values = getValues();
 		if(values == null || values.isEmpty()) {
@@ -98,6 +125,11 @@ public class Filter {
 		return values.get(FROM);
 	}
 
+	public void setToValue(Object valueTo) {
+		List<Object> valuesList = getOrCreateValuesList();
+		valuesList.set(TO, valueTo);
+		this.condition.put(VALUES, valuesList);
+	}
 	public Object getToValue() {
 		List<Object> values = getValues();
 		if(values == null || values.isEmpty() || values.size() > 2) {
