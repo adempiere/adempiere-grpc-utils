@@ -246,6 +246,17 @@ public class NumberManager {
 		return numberValue;
 	}
 
+	public static int getIntFromObject(Object value) {
+		int intValue = 0;
+		if (value == null) {
+			return intValue;
+		}
+		Integer integerValue = getIntegerFromObject(value);
+		if (integerValue != null) {
+			intValue = integerValue.intValue();
+		}
+		return intValue;
+	}
 	/**
 	 * Get Int value from String
 	 * @param stringValue
