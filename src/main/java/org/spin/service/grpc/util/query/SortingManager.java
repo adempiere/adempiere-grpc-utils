@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SortingManager {
 
-	private List<Map<String, String>> fillValues = new ArrayList<>();;
+	private List<Map<String, String>> fillValues = new ArrayList<Map<String, String>>();
 
 	/**
 	 * read filters and convert to stub
@@ -46,7 +46,7 @@ public class SortingManager {
 	@SuppressWarnings("unchecked")
 	private SortingManager(String sorting) {
 		if(Util.isEmpty(sorting, true)) {
-			this.fillValues = new ArrayList<>();
+			this.fillValues = new ArrayList<Map<String, String>>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
@@ -70,10 +70,10 @@ public class SortingManager {
 					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
 					Map<String, String> keyValueFilters = fileMapper.readValue(sorting, valueType);
 					
-					this.fillValues = new ArrayList<>();
+					this.fillValues = new ArrayList<Map<String, String>>();
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
 						keyValueFilters.entrySet().forEach(entry -> {
-							Map<String, String> condition = new HashMap<>();
+							Map<String, String> condition = new HashMap<String, String>();
 							condition.put(Order.NAME, entry.getKey());
 							condition.put(Order.TYPE, Order.ASCENDING);
 							String sortType = entry.getValue();
@@ -87,12 +87,12 @@ public class SortingManager {
 					/**
 						"DisplayColumn_C_BPartner_ID ASC, DocumentNo DESC"
 					 */
-					this.fillValues = new ArrayList<>();
+					this.fillValues = new ArrayList<Map<String, String>>();
 
 					// throw new RuntimeException("Invalid Order");
 					List<String> sortColumns = Arrays.asList(sorting.split("\\s*,\\s*"));
 					sortColumns.forEach(sortCondition -> {
-						Map<String, String> condition = new HashMap<>();
+						Map<String, String> condition = new HashMap<String, String>();
 	
 						List<String> sortValues = Arrays.asList(sortCondition.split("\\s"));
 						String columnName = sortValues.get(0).trim();

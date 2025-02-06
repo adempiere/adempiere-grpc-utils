@@ -686,7 +686,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values) {
-		Map<String, Object> convertedValues = new HashMap<>();
+		Map<String, Object> convertedValues = new HashMap<String, Object>();
 		if (values == null || values.size() <= 0) {
 			return convertedValues;
 		}
@@ -709,7 +709,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values, Map<String, Integer> displayTypeColumns) {
-		Map<String, Object> convertedValues = new HashMap<>();
+		Map<String, Object> convertedValues = new HashMap<String, Object>();
 		if (values == null || values.size() <= 0) {
 			return convertedValues;
 		}
