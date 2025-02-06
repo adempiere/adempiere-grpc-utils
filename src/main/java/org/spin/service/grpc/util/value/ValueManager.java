@@ -418,6 +418,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static String getStringFromValue(Value value, boolean uppercase) {
+		if (value == null) {
+			return null;
+		}
 		String stringValue = value.getStringValue();
 		if(Util.isEmpty(stringValue, true)) {
 			return null;
@@ -436,6 +439,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static int getIntegerFromValue(Value value) {
+		if (value == null) {
+			return 0;
+		}
 		int intValue = (int) value.getNumberValue();
 		if (intValue == 0 && value.hasStringValue()) {
 			intValue = NumberManager.getIntFromString(
@@ -451,6 +457,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static boolean getBooleanFromValue(Value value) {
+		if (value == null) {
+			return false;
+		}
 		if (!Util.isEmpty(value.getStringValue(), true)) {
 			return BooleanManager.getBooleanFromString(
 				value.getStringValue()
