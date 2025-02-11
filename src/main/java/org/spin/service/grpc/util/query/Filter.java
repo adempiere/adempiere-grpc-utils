@@ -51,11 +51,11 @@ public class Filter {
 	private Map<String, Object> condition;
 
 	public Filter(Map<String, Object> newCondition) {
-		condition = newCondition;
+		this.condition = newCondition;
 	}
 
 	public void setColumnName(String columnName) {
-		condition.put(NAME, columnName);
+		this.condition.put(NAME, columnName);
 	}
 	public String getColumnName() {
 		Object key = condition.get(NAME);
@@ -81,12 +81,12 @@ public class Filter {
 		this.condition.put(VALUES, value);
 	}
 	public Object getValue() {
-		return condition.get(VALUES);
+		return this.condition.get(VALUES);
 	}
 
 	@SuppressWarnings("unchecked")
 	public List<Object> getValues() {
-		Object value = condition.get(VALUES);
+		Object value = this.condition.get(VALUES);
 		if (value == null) {
 			return null;
 		}
@@ -98,7 +98,7 @@ public class Filter {
 
 	@SuppressWarnings("unchecked")
 	private List<Object> getOrCreateValuesList() {
-		Object values = condition.get(VALUES);
+		Object values = this.condition.get(VALUES);
 		List<Object> valuesList;
 		if (values instanceof List) {
 			valuesList = (List<Object>) values;
