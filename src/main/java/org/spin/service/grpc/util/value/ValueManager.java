@@ -819,6 +819,9 @@ public class ValueManager {
 	 * @return
 	 */
 	public static boolean isDateValue(Value value) {
+		if (value == null) {
+			return false;
+		}
 		Map<String, Value> values = value.getStructValue().getFieldsMap();
 		if(values == null) {
 			return false;
