@@ -141,6 +141,7 @@ public class OperatorUtil {
 				break;
 			// case DisplayType.Date:
 			// case DisplayType.DateTime:
+			// case DisplayType.Time:
 			// 	operator = BETWEEN;
 			// 	break;
 			default:
