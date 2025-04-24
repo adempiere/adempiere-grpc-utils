@@ -17,6 +17,7 @@ package org.spin.service.grpc.util.db;
 import java.util.regex.Matcher;
 
 import org.compiere.util.Util;
+import org.spin.service.grpc.util.value.NumberManager;
 
 /**
  * Class for handle SQL Limit
@@ -68,23 +69,16 @@ public class LimitUtil {
 	 */
 	public static int getPageNumber(String sessionUuid, String pageToken) {
 		int page = 1;
-		String pagePrefix = getPagePrefix(sessionUuid);
-		if(!Util.isEmpty(pageToken, true)) {
-			if(pageToken.startsWith(pagePrefix)) {
-				try {
-					page = Integer.parseInt(pageToken.replace(pagePrefix, ""));
-				} catch (Exception e) {
-					//	
-				}
-			} else {
-				try {
-					page = Integer.parseInt(pageToken);
-				} catch (Exception e) {
-					//	
-				}
+		final String pagePrefix = getPagePrefix(sessionUuid);
+		if (!Util.isEmpty(pageToken, true)) {
+			String pageString = pageToken;
+			if (pageToken.startsWith(pagePrefix)) {
+				pageString = pageToken.replace(pagePrefix, "");
 			}
+			page = NumberManager.getIntFromString(pageString);
 		}
 		if (page < 1) {
+			// always set one as first page
 			page = 1;
 		}
 		//	
