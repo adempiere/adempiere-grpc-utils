@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -40,8 +41,8 @@ import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -664,18 +665,49 @@ public class ValueManager {
 		if (Util.isEmpty(jsonValues, true)) {
 			return fillValues;
 		}
-		try {
-			ObjectMapper fileMapper = new ObjectMapper();
-			fillValues = fileMapper.readValue(
-				jsonValues,
-				HashMap.class
-			);
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
+		ObjectMapper fileMapper = new ObjectMapper(
+			new JsonFactory()
+		);
+		if (jsonValues.trim().startsWith("{")) {
+			try {
+				/*
+					{
+						"C_BPartner_ID": 1234,
+						"C_Invoice": 333
+					}
+				*/
+				fillValues = fileMapper.readValue(
+					jsonValues,
+					HashMap.class
+				);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		else if (jsonValues.trim().startsWith("[")) {
+			try {
+				/*
+					[
+						{"columnName: "C_BPartner_ID", "value": 1234 },
+						{"columnName": "C_Invoice", , "value": 333 }
+					]
+				*/
+				TypeReference<List<HashMap<String, Object>>> valueType = new TypeReference<List<HashMap<String, Object>>>() {};
+
+				List<HashMap<String, Object>> valuesAsList = fileMapper.readValue(jsonValues, valueType);
+				for (HashMap<String,Object> hashMap : valuesAsList) {
+					String key = StringManager.getStringFromObject(
+						hashMap.get("columnName")
+					);
+					Object value = hashMap.get("value");
+					fillValues.put(
+						key,
+						value
+					);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		return fillValues;
 	}
