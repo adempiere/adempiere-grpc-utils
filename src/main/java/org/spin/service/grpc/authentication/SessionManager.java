@@ -33,6 +33,7 @@ import javax.crypto.SecretKey;
 import org.adempiere.core.domains.models.I_AD_Language;
 import org.adempiere.core.domains.models.I_AD_Session;
 import org.adempiere.core.domains.models.I_AD_User_Authentication;
+import org.adempiere.core.domains.models.I_C_ConversionType;
 import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.model.MUserAuthentication;
 import org.compiere.model.MAcctSchema;
@@ -792,22 +793,32 @@ public class SessionManager {
 				pstmt.close();
 			}
 
-			// TODO: Improve with only table dimensions
+			// TODO: Improve query performance by adding cache, data does not change constantly unless dictionary changes
 			//	Default Values
 			log.info("Default Values ...");
 			sql = "SELECT t.TableName, c.ColumnName "
-				+ "FROM AD_Column c "
-				+ " INNER JOIN AD_Table t ON (c.AD_Table_ID=t.AD_Table_ID) "
-				+ "WHERE c.IsKey='Y' AND t.IsActive='Y'"
-				+ " AND EXISTS (SELECT * FROM AD_Column cc "
-				+ " WHERE ColumnName = 'IsDefault' AND t.AD_Table_ID=cc.AD_Table_ID AND cc.IsActive='Y')";
-			// pstmt = DB.prepareStatement(sql, null);
-			// rs = pstmt.executeQuery();
-			// while (rs.next()) {
-			// 	loadDefault (context, rs.getString(1), rs.getString(2));
-			// }
-			// rs.close();
-			// pstmt.close();
+				+ "FROM AD_Column AS c "
+				+ "INNER JOIN AD_Table AS t "
+					+ "ON (c.AD_Table_ID = t.AD_Table_ID) "
+				+ "WHERE t.IsActive='Y'"
+					+ "AND c.IsKey='Y' "
+					+ "AND EXISTS ("
+						+ "SELECT 1 "
+						+ "FROM AD_Column AS cc "
+						+ " WHERE cc.IsActive='Y' "
+							+ "AND ColumnName = 'IsDefault' "
+							+ "AND t.AD_Table_ID = cc.AD_Table_ID"
+					+ ")"
+					// TODO: Only conversion type, and table dimensions
+					+ "AND t.AD_Table_ID IN(" + I_C_ConversionType.Table_ID + ") "
+			;
+			pstmt = DB.prepareStatement(sql, null);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				loadDefault (context, rs.getString(1), rs.getString(2));
+			}
+			rs.close();
+			pstmt.close();
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, "loadPreferences", e);
 			e.printStackTrace();
@@ -838,8 +849,13 @@ public class SessionManager {
 			return;
 		String value = null;
 		//
-		String sql = "SELECT " + columnName + " FROM " + tableName	//	most specific first
-			+ " WHERE IsDefault='Y' AND IsActive='Y' ORDER BY AD_Client_ID DESC, AD_Org_ID DESC";
+		String sql = "SELECT " + columnName + " "
+			+ "FROM " + tableName + " "
+			+ "WHERE IsActive='Y' "
+				+ "AND IsDefault='Y' "
+				+ "AND ROWNUM = 1 "
+			+ "ORDER BY AD_Client_ID DESC, AD_Org_ID DESC"
+		;
 		sql = MRole.getDefault(context, false)
 			.addAccessSQL(
 				sql,
