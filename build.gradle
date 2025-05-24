@@ -4,12 +4,17 @@ plugins {
 	id 'signing'
 }
 
-sourceCompatibility = 1.11
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+	// targetCompatibility = JavaVersion.VERSION_17
+	withJavadocJar()
+	withSourcesJar()
+}
 
-def baseVersion = '3.9.4'
+def baseVersion = "3.9.4.001"
 def baseGroupId = 'io.github.adempiere'
-def grpcVersion = '1.65.1'
-def protobufVersion = '3.25.4'
+def grpcVersion = '1.69.0'
+def protobufVersion = '3.25.5'
 
 repositories {
     mavenLocal()
@@ -32,13 +37,10 @@ dependencies {
 	api "io.grpc:grpc-netty-shaded:${grpcVersion}"
 	api "com.google.protobuf:protobuf-java:${protobufVersion}"
 	api "com.google.protobuf:protobuf-java-util:${protobufVersion}"
-	api "io.jsonwebtoken:jjwt-api:0.12.6"
-	api "io.jsonwebtoken:jjwt-impl:0.12.6"
-	api "io.jsonwebtoken:jjwt-jackson:0.12.6"
 
     //	ADempiere Core
     api "${baseGroupId}:base:${baseVersion}"
-   	api "${baseGroupId}:adempiere-jwt-token:1.0.2"
+	api "${baseGroupId}:adempiere-jwt-token:1.0.4"
 }
 
 sourceSets {
@@ -47,11 +49,6 @@ sourceSets {
             srcDirs = ['src/main/java']
          }
     }
-}
-
-java {
-    withJavadocJar()
-    withSourcesJar()
 }
 
 
