@@ -2,6 +2,7 @@ plugins {
 	id 'java-library'
 	id 'maven-publish'
 	id 'signing'
+	id "io.github.uoxx3.project-environment" version "1.0.1"
 }
 
 sourceCompatibility = 1.11
@@ -14,6 +15,30 @@ def protobufVersion = '3.25.4'
 repositories {
     mavenLocal()
     mavenCentral()
+	maven {
+		// Custom GitHub Repository (ADempiere by Default)
+		url = findProperty("deployRepository") ?: System.properties['deploy.repository'] ?:
+			projectEnv.get("GITHUB_DEPLOY_REPOSITORY", null) ?: System.getenv("GITHUB_DEPLOY_REPOSITORY") ?:
+			"https://maven.pkg.github.com/adempiere/adempiere"
+		credentials {
+			// project property, system property, .env project file, system enviroment variable
+			username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
+				projectEnv.get("GITHUB_DEPLOY_USER", null) ?: System.getenv("GITHUB_DEPLOY_USER")
+			password = findProperty("deployToken") ?: System.properties['deploy.token'] ?:
+				projectEnv.get("GITHUB_DEPLOY_TOKEN", null) ?: System.getenv("GITHUB_DEPLOY_TOKEN")
+		}
+	}
+	maven {
+		// ADempiere organization maven github registry
+		url = "https://maven.pkg.github.com/adempiere/adempiere"
+		credentials {
+			// project property, system property, .env project file, system enviroment variable
+			username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
+				projectEnv.get("GITHUB_DEPLOY_USER", null) ?: System.getenv("GITHUB_DEPLOY_USER")
+			password = findProperty("deployToken") ?: System.properties['deploy.token'] ?:
+				projectEnv.get("GITHUB_DEPLOY_TOKEN", null) ?: System.getenv("GITHUB_DEPLOY_TOKEN")
+		}
+	}
 }
 
 allprojects {
@@ -57,7 +82,10 @@ java {
 
 def entityType = 'D'
 group = "io.github.adempiere"
-version = findProperty("deployVersion") ?: "local-1.0.0"
+// project property, system property, .env project file, system enviroment variable
+version = findProperty("deployVersion") ?: System.properties['deploy.version'] ?:
+    projectEnv.get("GITHUB_DEPLOY_VERSION", null) ?: System.getenv("ADEMPIERE_LIBRARY_VERSION") ?:
+    "local-1.0.0"
 
 jar {
 	manifest {
@@ -73,13 +101,19 @@ publishing {
     repositories {
 		mavenLocal()
 
-        maven {
-            url = findProperty("deployPublishUrl") ?: System.properties['deploy.publish_url']
-            credentials {
-                username = findProperty("deployUsername") ?: System.properties['deploy.user']
-                password = findProperty("deployPassword") ?: System.properties['deploy.token']
-            }
-        }
+		maven {
+			// Adempiere GitHub Organization by Default
+			url = findProperty("deployPublishUrl") ?: System.properties['deploy.publish_url'] ?:
+				projectEnv.get("GITHUB_DEPLOY_URL", null) ?: System.getenv("GITHUB_DEPLOY_URL") ?:
+				"https://maven.pkg.github.com/adempiere/adempiere-customizations"
+			credentials {
+				// project property, system property, .env project file, system enviroment variable
+				username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
+					projectEnv.get("GITHUB_DEPLOY_USER", null) ?: System.getenv("GITHUB_DEPLOY_USER")
+				password = findProperty("deployToken") ?: System.properties['deploy.token'] ?:
+					projectEnv.get("GITHUB_DEPLOY_TOKEN", null) ?: System.getenv("GITHUB_DEPLOY_TOKEN")
+			}
+		}
     }
     publications {
         mavenJava(MavenPublication) {
@@ -103,6 +137,11 @@ publishing {
                         name = 'Yamel Senih'
                         email = 'ysenih@erpya.com'
                     }
+					developer {
+						id = 'edwinbetanc0urt'
+						name = 'Edwin Betancourt'
+						email = 'EdwinBetanc0urt@outlook.com'
+					}
                 }
                 scm {
                     connection = 'scm:git:git://github.com/adempiere/adempiere-grpc-utils.git'
