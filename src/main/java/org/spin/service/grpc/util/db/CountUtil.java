@@ -28,7 +28,7 @@ import org.compiere.util.DB;
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
 public class CountUtil {
-	
+
 	/**
 	 * Count records
 	 * @param sql
@@ -73,13 +73,23 @@ public class CountUtil {
 	 * @param transactionName
 	 * @return
 	 */
-	public static int countRecords(String sql, String tableName, String tableNameAlias, List<Object> parameters, String transactionName) {
+	public static int countRecords(String originalSql, String tableName, String tableNameAlias, List<Object> parameters, String transactionName) {
 		// tableName tableName, tableName AS tableName
 		String tableWithAliases = FromUtil.getPatternTableName(tableName, tableNameAlias);
 
 		String regex = "\\s+(FROM)\\s+(" + tableWithAliases + ")"
 			+ "\\s+(\\bWHERE\\b|\\bORDER\\s+BY\\b|"
 			+ "((LEFT|INNER|RIGHT|FULL|SELF|CROSS)\\s+(OUTER\\s+){0,1}){0,1}JOIN)"
+		;
+
+		// remove comments and duplicated spaces
+		final String sql = originalSql
+			.replaceAll("/\\*.*?\\*/", "")
+			.replaceAll("--.*?\n", "")
+			.replaceAll("\\s+", " ")
+			.replaceAll("\n", "\\n")
+			.replaceAll("\r", "\\r")
+			.replace("\t", "\\t")
 		;
 
 		Pattern pattern = Pattern.compile(
@@ -122,16 +132,32 @@ public class CountUtil {
 			}
 		}
 
-		String queryCount = "SELECT COUNT(*) " + sql.substring(positionFrom, sql.length());
+		String selectColumn = "SELECT COUNT(*) ";
 
+		// verify if has DISTINCT
+		String distinctPattern = "^\\s*SELECT\\s+DISTINCT\\b";
+		boolean hasDistinct = Pattern.compile(
+			distinctPattern,
+			Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+		).matcher(sql).find();
+		if (hasDistinct) {
+			// TODO: Add support with first column
+			// String firstSelectColumn = "*";
+			// selectColumn = "SELECT COUNT(DISTINCT " + firstSelectColumn + ") ";
+		}
+
+		String queryCount = selectColumn + sql.substring(positionFrom, sql.length());
 		// remove order by clause
 		queryCount = OrderByUtil.removeOrderBy(queryCount);
 
+		// Ensure parameters list is not null for `DB.getSQLValueEx`
 		if (parameters == null) {
 			parameters = new ArrayList<Object>();
 		}
 
-		return DB.getSQLValueEx(transactionName, queryCount, parameters);
+		// Execute the count query using Adempiere's DB utility.
+		int recordsLength = DB.getSQLValueEx(transactionName, queryCount, parameters);
+		return recordsLength;
 	}
 
 }

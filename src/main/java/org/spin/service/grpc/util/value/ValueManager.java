@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -82,7 +83,39 @@ public class ValueManager {
 			return getValueFromBoolean((Boolean) value);
 		} else if(value instanceof Timestamp) {
 			return getValueFromTimestamp((Timestamp) value);
-		}
+		} else if (value instanceof Map) {
+			//  Recursivamente convertir Map a Struct (si es necesario)
+			Struct.Builder structBuilder = Struct.newBuilder();
+			((Map<?, ?>) value).forEach((k, v) -> {
+				String structKey = "";
+				if (k instanceof String) {
+					structKey = (String) k;
+				} else {
+					//  Manejar error o lanzar excepción si la clave no es String
+					structKey = StringManager.getStringFromObject(k);
+				}
+
+				Value.Builder structValue = getValueFromObject(v);
+				structBuilder.putFields(
+					structKey,
+					structValue.build()
+				);
+			});
+			return builder.setStructValue(
+				structBuilder.build()
+			);
+		} else if (value instanceof List) {
+			//  Convertir List a ListValue
+			com.google.protobuf.ListValue.Builder listBuilder = com.google.protobuf.ListValue.newBuilder();
+			((List<?>) value).forEach(v -> {
+				listBuilder.addValues(
+					getValueFromObject(v)
+				);
+			});
+			return builder.setListValue(
+				listBuilder.build()
+			);
+		} 
 		//	
 		return builder;
 	}
