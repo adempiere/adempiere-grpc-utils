@@ -83,14 +83,7 @@ public class CountUtil {
 		;
 
 		// remove comments and duplicated spaces
-		final String sql = originalSql
-			.replaceAll("/\\*.*?\\*/", "")
-			.replaceAll("--.*?\n", "")
-			.replaceAll("\\s+", " ")
-			.replaceAll("\n", "\\n")
-			.replaceAll("\r", "\\r")
-			.replace("\t", "\\t")
-		;
+		final String sql = SqlUtil.cleanSQL(originalSql);
 
 		Pattern pattern = Pattern.compile(
 			regex,
