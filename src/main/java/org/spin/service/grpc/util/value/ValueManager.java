@@ -83,6 +83,38 @@ public class ValueManager {
 			return getValueFromBoolean((Boolean) value);
 		} else if(value instanceof Timestamp) {
 			return getValueFromTimestamp((Timestamp) value);
+		} else if (value instanceof Map) {
+			//  Recursivamente convertir Map a Struct (si es necesario)
+			Struct.Builder structBuilder = Struct.newBuilder();
+			((Map<?, ?>) value).forEach((keyItem, valueItem) -> {
+				String structKey = "";
+				if (keyItem instanceof String) {
+					structKey = (String) keyItem;
+				} else {
+					//  Manejar error o lanzar excepción si la clave no es String
+					structKey = StringManager.getStringFromObject(keyItem);
+				}
+
+				Value.Builder structValue = getValueFromObject(valueItem);
+				structBuilder.putFields(
+					structKey,
+					structValue.build()
+				);
+			});
+			return builder.setStructValue(
+				structBuilder.build()
+			);
+		} else if (value instanceof List) {
+			//  Convertir List a ListValue
+			com.google.protobuf.ListValue.Builder listBuilder = com.google.protobuf.ListValue.newBuilder();
+			((List<?>) value).forEach(valueItem -> {
+				listBuilder.addValues(
+					getValueFromObject(valueItem)
+				);
+			});
+			return builder.setListValue(
+				listBuilder.build()
+			);
 		}
 		//	
 		return builder;
