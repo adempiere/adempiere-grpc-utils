@@ -43,7 +43,7 @@ public class FromUtil {
 		// TODO: Validate if contains JoinClause value
 		MViewDefinition fromViewDefinition = viewDefinitionsList.get(0);
 		MTable table = new MTable(Env.getCtx(), fromViewDefinition.getAD_Table_ID(), null);
-		String fromClause = " FROM " + table.getTableName() + " AS " + fromViewDefinition.getTableAlias();
+		String fromClause = " FROM " + table.getTableName() + " " + fromViewDefinition.getTableAlias();
 		return fromClause;
 	}
 
