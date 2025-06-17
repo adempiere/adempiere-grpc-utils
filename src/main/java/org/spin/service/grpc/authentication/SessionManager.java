@@ -59,6 +59,7 @@ import org.compiere.util.Util;
 import org.spin.eca52.util.JWTUtil;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
+import org.spin.service.grpc.util.base.PreferenceUtil;
 import org.spin.service.grpc.util.value.NumberManager;
 import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
@@ -337,6 +338,12 @@ public class SessionManager {
 		} else {
 			bearerToken = createAndGetBearerToken(session, warehouseId, Env.getAD_Language(session.getCtx()));
 		}
+
+		// Update session preferences
+		PreferenceUtil.saveSessionPreferences(
+			userId, language, session.getAD_Role_ID(), session.getAD_Client_ID(), session.getAD_Org_ID(), warehouseId
+		);
+
 		return bearerToken;
 	}
 
@@ -605,19 +612,6 @@ public class SessionManager {
 		//	Load preferences
 		loadPreferences(context);
 	}
-	
-	/**
-	 * Get Default Warehouse after login
-	 * @param organizationId
-	 * @return
-	 */
-	public static int getDefaultWarehouseId(int organizationId) {
-		if (organizationId < 0) {
-			return -1;
-		}
-		String sql = "SELECT M_Warehouse_ID FROM M_Warehouse WHERE IsActive = 'Y' AND AD_Org_ID = ? AND IsInTransit='N'";
-		return DB.getSQLValue(null, sql, organizationId);
-	}
 
 	/**
 	 * Get Default role after login
@@ -662,6 +656,19 @@ public class SessionManager {
 				+ ") "
 			+ "ORDER BY o.AD_Org_ID DESC, o.Name";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
+	}
+	
+	/**
+	 * Get Default Warehouse after login
+	 * @param organizationId
+	 * @return
+	 */
+	public static int getDefaultWarehouseId(int organizationId) {
+		if (organizationId < 0) {
+			return -1;
+		}
+		String sql = "SELECT M_Warehouse_ID FROM M_Warehouse WHERE IsActive = 'Y' AND AD_Org_ID = ? AND IsInTransit='N' ORDER BY Name";
+		return DB.getSQLValue(null, sql, organizationId);
 	}
 
 	/**
