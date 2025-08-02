@@ -159,7 +159,11 @@ public class NumberManager {
 	}
 
 
-
+	/**
+	 * TODO: Validate null with int as Object.intValue()
+	 * @param value
+	 * @return
+	 */
 	public static Integer getIntegerFromObject(Object value) {
 		Integer integerValue = null;
 		if (value == null) {
@@ -244,6 +248,22 @@ public class NumberManager {
 		}
 		numberValue = bigDecimalValue.intValue();
 		return numberValue;
+	}
+
+	/**
+ 	 * @param value
+	 * @return
+	 */
+	public static int getIntFromObject(Object value) {
+		int intValue = 0;
+		if (value == null) {
+			return intValue;
+		}
+		Integer integerValue = getIntegerFromObject(value);
+		if (integerValue != null) {
+			intValue = integerValue.intValue();
+		}
+		return intValue;
 	}
 
 	/**

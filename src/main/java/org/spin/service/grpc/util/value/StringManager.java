@@ -42,8 +42,8 @@ public class StringManager {
 		if (value == null) {
 			return null;
 		}
-		// return value.toString();
-		return (String) value;
+		// return (String) value;
+		return value.toString();
 	}
 
 }
