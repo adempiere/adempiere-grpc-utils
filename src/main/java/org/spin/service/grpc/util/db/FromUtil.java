@@ -28,10 +28,19 @@ import org.compiere.util.Util;
  */
 public class FromUtil {
 
+	/**
+	 * TODO: Remove with `MView.getFromClause(boolean withoutJoins)`
+	 * @param viewId
+	 * @return
+	 */
 	public static String getFromClauseByView(int viewId) {
 		MView view = new MView(Env.getCtx(), viewId);
 		List<MViewDefinition> viewDefinitionsList = view.getViewDefinitions();
+		if (viewDefinitionsList == null || viewDefinitionsList.isEmpty()) {
+			return null;
+		}
 
+		// TODO: Validate if contains JoinClause value
 		MViewDefinition fromViewDefinition = viewDefinitionsList.get(0);
 		MTable table = new MTable(Env.getCtx(), fromViewDefinition.getAD_Table_ID(), null);
 		String fromClause = " FROM " + table.getTableName() + " " + fromViewDefinition.getTableAlias();
