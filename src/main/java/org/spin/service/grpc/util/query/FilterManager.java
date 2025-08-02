@@ -46,7 +46,7 @@ public class FilterManager {
 	@SuppressWarnings("unchecked")
 	private FilterManager(String filter) {
 		if(Util.isEmpty(filter, true)) {
-			fillValues = new ArrayList<>();
+			this.fillValues = new ArrayList<Map<String, Object>>();
 		} else {
 			ObjectMapper fileMapper = new ObjectMapper();
 			try {
@@ -67,12 +67,12 @@ public class FilterManager {
 					*/
 					TypeReference<HashMap<String,Object>> valueType = new TypeReference<HashMap<String,Object>>() {};
 					// JavaType valueType = fileMapper.getTypeFactory().constructMapLikeType(Map.class, String.class, Object.class);
-					fillValues = new ArrayList<>();
+					this.fillValues = new ArrayList<Map<String, Object>>();
 
 					Map<String, Object> keyValueFilters = fileMapper.readValue(filter, valueType);
 					if (keyValueFilters != null && !keyValueFilters.isEmpty()) {
 						keyValueFilters.entrySet().forEach(entry -> {
-							Map<String, Object> condition = new HashMap<>();
+							Map<String, Object> condition = new HashMap<String, Object>();
 
 							// set column name as key filter
 							condition.put(Filter.NAME, entry.getKey());

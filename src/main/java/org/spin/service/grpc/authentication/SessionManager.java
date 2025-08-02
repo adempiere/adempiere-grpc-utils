@@ -95,7 +95,7 @@ public class SessionManager {
 	private static CCache<Integer, String> sessionOpenIDCCache = new CCache<Integer, String>(I_AD_Session.Table_Name, 30, 0);	//	no time-out
 
 	/**	Session Context	*/
-	private static final Map<String, Properties> sessionsContext = Collections.synchronizedMap(new Hashtable<>());
+	private static final Map<String, Properties> sessionsContext = Collections.synchronizedMap(new Hashtable<String, Properties>());
 
 	public static void revokeSession(String token) {
 		sessionsContext.remove(token);
