@@ -24,7 +24,9 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -40,9 +42,10 @@ import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ListValue;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
@@ -62,11 +65,20 @@ public class ValueManager {
 
 
 	/**
-	 * Get Value 
+	 * Get Value
+	 * @deprecated Use {@link ValueManager#getProtoValueFromObject()} instead.
 	 * @param value
 	 * @return
 	 */
 	public static Value.Builder getValueFromObject(Object value) {
+		return getProtoValueFromObject(value);
+	}
+	/**
+	 * Get Proto Value
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromObject(Object value) {
 		Value.Builder builder = Value.newBuilder();
 		if(value == null) {
 			return getValueFromNull();
@@ -82,9 +94,89 @@ public class ValueManager {
 			return getValueFromBoolean((Boolean) value);
 		} else if(value instanceof Timestamp) {
 			return getValueFromTimestamp((Timestamp) value);
+		} else if (value instanceof Map) {
+			return getProtoValueFromMap(
+				(Map) value
+			);
+		} else if (value instanceof List) {
+			return getProtoValueFromList(
+				(List) value
+			);
 		}
 		//	
 		return builder;
+	}
+
+
+	/**
+	 * Recursive convert List to ListValue
+	 * @param values
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromList(List values) {
+		Value.Builder protoValue = Value.newBuilder();
+		ListValue.Builder protoListBuilder = ListValue.newBuilder();
+		
+		if (values == null) {
+			// TODO: Validate if return null or empty
+			// protoValue.setListValue(
+			// 	protoListBuilder.build()
+			// );
+			return getValueFromNull();
+		}
+		else {
+			// Each and convert List to ListValue
+			((List<?>) values).forEach(valueItem -> {
+				Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
+				protoListBuilder.addValues(
+					protoValueItem
+				);
+			});
+		}
+		protoValue.setListValue(
+			protoListBuilder.build()
+		);
+		return protoValue;
+	}
+
+	/**
+	 * Recursive convert Map to Struct
+	 * @param values
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromMap(Map<?, ?> values) {
+		Value.Builder protoValue = Value.newBuilder();
+		Struct.Builder structBuilder = Struct.newBuilder();
+
+		if (values == null) {
+			// TODO: Validate if return null or empty
+			// protoValue.setStructValue(
+			// 	structBuilder
+			// );
+			return getValueFromNull();
+		}
+		else {
+			((Map<?, ?>) values).forEach((keyItem, valueItem) -> {
+				// key always is string
+				String structKey = "";
+				if (keyItem instanceof String) {
+					structKey = (String) keyItem;
+				} else {
+					// Handle error if key not is String
+					structKey = StringManager.getStringFromObject(keyItem);
+				}
+
+				Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
+				structBuilder.putFields(
+					structKey,
+					protoValueItem.build()
+				);
+			});
+		}
+		protoValue.setStructValue(
+			structBuilder
+		);
+		return protoValue;
 	}
 
 
@@ -482,7 +574,7 @@ public class ValueManager {
 			return getValueFromNull();
 		}
 		if (referenceId <= 0) {
-			return getValueFromObject(value);
+			return getProtoValueFromObject(value);
 		}
 		//	Validate values
 		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
@@ -491,7 +583,7 @@ public class ValueManager {
 			);
 			if (integerValue == null && (DisplayType.Search == referenceId || DisplayType.Table == referenceId)) {
 				// no casteable for integer, as `AD_Language`, `EntityType`
-				return getValueFromObject(value);
+				return getProtoValueFromObject(value);
 			}
 			return getValueFromInteger(integerValue);
 		} else if(DisplayType.isNumeric(referenceId)) {
@@ -540,10 +632,8 @@ public class ValueManager {
 					stringValue
 				);
 			}
-			return getValueFromObject(value);
-		} else {
-			builderValue = getValueFromObject(value);
 		}
+		builderValue = getProtoValueFromObject(value);
 		//
 		return builderValue;
 	}
@@ -673,18 +763,49 @@ public class ValueManager {
 		if (Util.isEmpty(jsonValues, true)) {
 			return fillValues;
 		}
-		try {
-			ObjectMapper fileMapper = new ObjectMapper();
-			fillValues = fileMapper.readValue(
-				jsonValues,
-				HashMap.class
-			);
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
+		ObjectMapper fileMapper = new ObjectMapper(
+			new JsonFactory()
+		);
+		if (jsonValues.trim().startsWith("{")) {
+			try {
+				/*
+					{
+						"C_BPartner_ID": 1234,
+						"C_Invoice": 333
+					}
+				*/
+				fillValues = fileMapper.readValue(
+					jsonValues,
+					HashMap.class
+				);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		else if (jsonValues.trim().startsWith("[")) {
+			try {
+				/*
+					[
+						{"columnName: "C_BPartner_ID", "value": 1234 },
+						{"columnName": "C_Invoice", , "value": 333 }
+					]
+				*/
+				TypeReference<List<HashMap<String, Object>>> valueType = new TypeReference<List<HashMap<String, Object>>>() {};
+
+				List<HashMap<String, Object>> valuesAsList = fileMapper.readValue(jsonValues, valueType);
+				for (HashMap<String,Object> hashMap : valuesAsList) {
+					String key = StringManager.getStringFromObject(
+						hashMap.get("columnName")
+					);
+					Object value = hashMap.get("value");
+					fillValues.put(
+						key,
+						value
+					);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		return fillValues;
 	}
@@ -750,29 +871,12 @@ public class ValueManager {
 
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
+	 * @deprecated Use {@link ValueManager#getProtoValueFromObject()} instead. With recursive support
 	 * @param values
 	 * @return
 	 */
 	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
-		Value.Builder convertedValues = Value.newBuilder();
-		Struct.Builder mapValue = Struct.newBuilder();
-
-		if (values != null && values.size() > 0) {
-			values.keySet().forEach(keyValue -> {
-				Object valueItem = values.get(keyValue);
-				Value.Builder valueBuilder = getValueFromObject(
-					valueItem
-				);
-				mapValue.putFields(
-					keyValue,
-					valueBuilder.build()
-				);
-			});
-		}
-
-		//	
-		convertedValues.setStructValue(mapValue);
-		return convertedValues;
+		return getProtoValueFromMap(values);
 	}
 	
 	/**
@@ -790,8 +894,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Object getObjectFromValue(Value value, boolean uppercase) {
-		if(value == null
-				|| value.hasNullValue()) {
+		if(value == null || value.hasNullValue()) {
 			return null;
 		}
 		if(value.hasStringValue()) {
@@ -809,10 +912,67 @@ public class ValueManager {
 			} else if(isDateValue(value)) {
 				return getTimestampFromValue(value);
 			}
+			return getMapFromProtoValue(value);
+		}
+		if(value.hasListValue()) {
+			return getListFromProtoValue(
+				value
+			);
 		}
 		return null;
 	}
-	
+
+	public static Map<String, Object> getMapFromProtoValueStruct(Struct values) {
+		Map<String, Object> valuesMap = new HashMap<String, Object>();
+		if (values == null) {
+			return valuesMap;
+		}
+		values.getFieldsMap().forEach((keyItem, protoValueItem) -> {
+			Object valueItem = getObjectFromValue(protoValueItem);
+			valuesMap.put(
+				keyItem,
+				valueItem
+			);
+		});
+
+		return valuesMap;
+	}
+	public static Map<String, Object> getMapFromProtoValue(Value protoValue) {
+		Map<String, Object> valuesMap = new HashMap<String, Object>();
+		if (protoValue == null) {
+			return valuesMap;
+		}
+
+		valuesMap = getMapFromProtoValueStruct(
+			protoValue.getStructValue()
+		);
+		return valuesMap;
+	}
+
+
+	public static List<?> getListFromProtoValuesList(ListValue values) {
+		ArrayList<Object> valuesList = new ArrayList<Object>();
+		if (values == null) {
+			return valuesList;
+		}
+		values.getValuesList().forEach(protoValueItem -> {
+			Object valueItem = ValueManager.getObjectFromValue(protoValueItem);
+			valuesList.add(valueItem);
+		});
+		;
+		return valuesList;
+	}
+	public static List<?> getListFromProtoValue(Value value) {
+		List<?> valuesList = new ArrayList<Object>();
+		if (value == null) {
+			return valuesList;
+		}
+		valuesList = getListFromProtoValuesList(
+			value.getListValue()
+		);
+		return valuesList;
+	}
+
 	/**
 	 * Validate if a value is date
 	 * @param value
