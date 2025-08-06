@@ -192,7 +192,7 @@ public class TimeManager {
 	 * @link ValueManager.getDateFromTimestampDate
 	 * @param value
 	 * @return
-	 * @see {@link ValueManager.getDateFromTimestampDate(com.google.protobuf.Timestamp)}
+	 * @deprecated {@link ValueManager.getDateFromTimestampDate(com.google.protobuf.Timestamp)}
 	 */
 	@Deprecated
 	public static Timestamp convertValueToDate(com.google.protobuf.Timestamp value) {

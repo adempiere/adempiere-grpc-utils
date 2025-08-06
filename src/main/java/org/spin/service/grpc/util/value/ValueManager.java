@@ -66,10 +66,11 @@ public class ValueManager {
 
 	/**
 	 * Get Value
-	 * @deprecated Use {@link ValueManager#getProtoValueFromObject()} instead.
+	 * @deprecated Use {@link ValueManager#getProtoValueFromObject(Object)} instead.
 	 * @param value
 	 * @return
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromObject(Object value) {
 		return getProtoValueFromObject(value);
 	}
@@ -871,14 +872,15 @@ public class ValueManager {
 
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
-	 * @deprecated Use {@link ValueManager#getProtoValueFromObject()} instead. With recursive support
+	 * @deprecated Use {@link ValueManager#getProtoValueFromObject(Object)} instead. With recursive support
 	 * @param values
 	 * @return
 	 */
+	@Deprecated
 	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
 		return getProtoValueFromMap(values);
 	}
-	
+
 	/**
 	 * Default get value from type
 	 * @param valueToConvert
@@ -1073,13 +1075,14 @@ public class ValueManager {
 				|| DisplayType.Locator == displayType
 				|| DisplayType.PAttribute == displayType;
 	}
-	
+
 	/**
 	 * Convert null on ""
 	 * @param value
-	 * @deprecated Use {@link StringManager#getValidString()} instead.
+	 * @deprecated Use {@link StringManager#getValidString(String)} instead.
 	 * @return
 	 */
+	@Deprecated
 	public static String validateNull(String value) {
 		return StringManager.getValidString(
 			value
