@@ -66,7 +66,7 @@ public class CountUtil {
 
 	/**
 	 * Count records using transaction name
-	 * @param sql
+	 * @param originalSql
 	 * @param tableName
 	 * @param tableNameAlias
 	 * @param parameters
