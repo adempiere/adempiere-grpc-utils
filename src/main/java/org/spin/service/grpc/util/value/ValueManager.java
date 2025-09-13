@@ -1122,19 +1122,14 @@ public class ValueManager {
 
 	/**
 	 * Get translation if is necessary
+	 * @deprecated Use {@link RecordUtil#getTranslation(PO, String)} instead.
 	 * @param object
 	 * @param columnName
 	 * @return
 	 */
+	@Deprecated
 	public static String getTranslation(PO object, String columnName) {
-		if(object == null) {
-			return null;
-		}
-		if(Language.isBaseLanguage(Env.getAD_Language(Env.getCtx()))) {
-			return object.get_ValueAsString(columnName);
-		}
-		//	
-		return object.get_Translation(columnName);
+		return RecordUtil.getTranslation(object, columnName);
 	}
 
 }
