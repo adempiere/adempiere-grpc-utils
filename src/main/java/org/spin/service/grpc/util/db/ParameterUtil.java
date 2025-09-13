@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +30,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.DisplayType;
+import org.compiere.util.Util;
 import org.spin.service.grpc.util.value.BooleanManager;
 import org.spin.service.grpc.util.value.NumberManager;
 import org.spin.service.grpc.util.value.StringManager;
@@ -255,6 +257,33 @@ public class ParameterUtil {
 		}
 
 		return transformValue;
+	}
+
+
+	/**
+	 * Generate sql placeholders to set bind parametes
+	 * @param list List<?>(1, 'a', null)
+	 * @return "?, ?, ?"
+	 */
+	public static String getPlaceholdersFromList(List<?> list) {
+		return getPlaceholdersFromList(list, null);
+	}
+	/**
+	 * Generate sql placeholders to set bind parametes
+	 * @param list List<?>(1, 'a', null)
+	 * @param sqlFunction `UPPER(?)`, `TRIM(?)`, `TRUNC(?, 'DD')`
+	 * @return "?, ?, ?"
+	 */
+	public static String getPlaceholdersFromList(List<?> list, String sqlFunction) {
+		if (list == null || list.isEmpty()) {
+			return "";
+		}
+		String placeHolder = "?";
+		if (!Util.isEmpty(sqlFunction, true)) {
+			placeHolder = sqlFunction;
+		}
+		final List<String> placeHolders = Collections.nCopies(list.size(), placeHolder);
+		return String.join(",", placeHolders);
 	}
 
 }
