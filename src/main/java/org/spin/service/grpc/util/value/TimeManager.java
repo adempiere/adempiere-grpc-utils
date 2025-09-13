@@ -188,19 +188,8 @@ public class TimeManager {
 	}
 
 
-	/**
-	 * @link ValueManager.getDateFromTimestampDate
-	 * @param value
-	 * @return
-	 * @deprecated {@link ValueManager.getDateFromTimestampDate(com.google.protobuf.Timestamp)}
-	 */
-	@Deprecated
-	public static Timestamp convertValueToDate(com.google.protobuf.Timestamp value) {
-		return ValueManager.getDateFromTimestampDate(value);
-	}
-
 	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
-		return ValueManager.getTimestampFromDate(value);
+		return ValueManager.getProtoTimestampFromTimestamp(value);
 	}
 
 }

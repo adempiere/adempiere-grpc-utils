@@ -41,6 +41,7 @@ import org.compiere.util.Language;
 import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
+import org.spin.service.grpc.util.query.Filter;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -86,6 +87,7 @@ public class ValueManager {
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
+			// TODO: Add support to `Float` and `Double`
 			return getValueFromBigDecimal((BigDecimal) value);
 		} else if (value instanceof Integer) {
 			return getValueFromInteger((Integer)value);
@@ -94,14 +96,16 @@ public class ValueManager {
 		} else if (value instanceof Boolean) {
 			return getValueFromBoolean((Boolean) value);
 		} else if(value instanceof Timestamp) {
+			// TODO: Add support to `Long`
 			return getValueFromTimestamp((Timestamp) value);
 		} else if (value instanceof Map) {
 			return getProtoValueFromMap(
-				(Map) value
+				(Map<?, ?>) value
 			);
 		} else if (value instanceof List) {
+			// TODO: Add support to `Enum`
 			return getProtoValueFromList(
-				(List) value
+				(List<?>) value
 			);
 		}
 		//	
@@ -114,7 +118,7 @@ public class ValueManager {
 	 * @param values
 	 * @return
 	 */
-	public static Value.Builder getProtoValueFromList(List values) {
+	public static Value.Builder getProtoValueFromList(List<?> values) {
 		Value.Builder protoValue = Value.newBuilder();
 		ListValue.Builder protoListBuilder = ListValue.newBuilder();
 		
@@ -147,14 +151,30 @@ public class ValueManager {
 	 */
 	public static Value.Builder getProtoValueFromMap(Map<?, ?> values) {
 		Value.Builder protoValue = Value.newBuilder();
-		Struct.Builder structBuilder = Struct.newBuilder();
-
 		if (values == null) {
 			// TODO: Validate if return null or empty
 			// protoValue.setStructValue(
 			// 	structBuilder
 			// );
 			return getValueFromNull();
+		}
+		Struct.Builder structBuilder = getStructFromMap(values);
+		protoValue.setStructValue(
+			structBuilder
+		);
+		return protoValue;
+	}
+
+	/**
+	 * Recursive convert Map to Struct
+	 * @param values
+	 * @return
+	 */
+	public static Struct.Builder getStructFromMap(Map<?, ?> values) {
+		Struct.Builder structBuilder = Struct.newBuilder();
+
+		if (values == null) {
+			return structBuilder;
 		}
 		else {
 			((Map<?, ?>) values).forEach((keyItem, valueItem) -> {
@@ -174,10 +194,32 @@ public class ValueManager {
 				);
 			});
 		}
-		protoValue.setStructValue(
-			structBuilder
-		);
-		return protoValue;
+		return structBuilder;
+	}
+
+
+	public static Struct.Builder getStructFromFiltersList(List<Filter> filtersList) {
+		Struct.Builder structBuilder = Struct.newBuilder();
+		if (filtersList == null || filtersList.isEmpty()) {
+			return structBuilder;
+		}
+
+		filtersList.stream()
+			.filter(condition -> !Util.isEmpty(condition.getColumnName(), true))
+			.forEach(condition -> {
+				final String conditionColumnName = condition.getColumnName();
+				final Object conditionValue = condition.getValue();
+				Value.Builder protoValueItem = getProtoValueFromObject(
+					conditionValue
+				);
+				structBuilder.putFields(
+					conditionColumnName,
+					protoValueItem.build()
+				);
+			})
+		;
+
+		return structBuilder;
 	}
 
 
@@ -379,10 +421,20 @@ public class ValueManager {
 
 	/**
 	 * Get google.protobuf.Timestamp from Timestamp
+	 * @deprecated Use {@link ValueManager#getProtoTimestampFromTimestamp(Object)} instead.
 	 * @param dateValue
 	 * @return
 	 */
+	@Deprecated
 	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp dateValue) {
+		return getProtoTimestampFromTimestamp(dateValue);
+	}
+	/**
+	 * Get google.protobuf.Timestamp from Timestamp
+	 * @param dateValue
+	 * @return
+	 */
+	public static com.google.protobuf.Timestamp getProtoTimestampFromTimestamp(Timestamp dateValue) {
 		Timestamp minDate = ValueManager.getDateFromTimestampDate(com.google.protobuf.util.Timestamps.MIN_VALUE);
 		if (dateValue == null || minDate.equals(dateValue)) {
 			// return com.google.protobuf.Timestamp.newBuilder().build(); // 1970-01-01T00:00:00Z
@@ -394,12 +446,24 @@ public class ValueManager {
 			dateValue.getTime()
 		);
 	}
+
+
+	/**
+	 * Get Date from value
+	 * @deprecated Use {@link ValueManager#getTimestampFromProtoTimestamp(Object)} instead.
+	 * @param dateValue
+	 * @return
+	 */
+	@Deprecated
+	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
+		return getTimestampFromProtoTimestamp(dateValue);
+	}
 	/**
 	 * Get Date from value
 	 * @param dateValue
 	 * @return
 	 */
-	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
+	public static Timestamp getTimestampFromProtoTimestamp(com.google.protobuf.Timestamp dateValue) {
 		if(dateValue == null || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
 			return null;
 		}

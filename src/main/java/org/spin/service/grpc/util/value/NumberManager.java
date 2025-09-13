@@ -19,8 +19,6 @@ import java.math.BigDecimal;
 
 import org.compiere.util.Util;
 
-import com.google.protobuf.Value;
-
 /**
  * Class for handle Number (BigDecimal, Integer, Double, Float) values
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
@@ -159,6 +157,7 @@ public class NumberManager {
 	}
 
 
+
 	/**
 	 * TODO: Validate null with int as Object.intValue()
 	 * @param value
@@ -250,6 +249,7 @@ public class NumberManager {
 		return numberValue;
 	}
 
+
 	/**
  	 * @param value
 	 * @return
@@ -291,26 +291,6 @@ public class NumberManager {
 	 */
 	public static String getIntToString(int intValue) {
 		return String.valueOf(intValue);
-	}
-
-	public static BigDecimal convertFromValueToDecimal(Value value) {
-		if(value.hasStringValue()) {
-			return NumberManager.getBigDecimalFromString(
-				value.getStringValue()
-			);
-		}
-		return null;
-	}
-	
-	public static Value convertFromDecimalToValue(BigDecimal value) {
-		if(value != null) {
-			return Value.newBuilder().setStringValue(
-				getBigDecimalToString(
-					value
-				)
-			).build();
-		}
-		return Value.newBuilder().build();
 	}
 
 }
