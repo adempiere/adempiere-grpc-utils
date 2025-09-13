@@ -41,6 +41,7 @@ import org.compiere.util.Language;
 import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
+import org.spin.service.grpc.util.base.RecordUtil;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
