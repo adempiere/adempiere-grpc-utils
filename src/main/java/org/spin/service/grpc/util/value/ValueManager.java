@@ -16,9 +16,7 @@
 package org.spin.service.grpc.util.value;
 
 import java.math.BigDecimal;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -1070,16 +1068,17 @@ public class ValueManager {
 	 */
 	public static boolean isLookup(int displayType) {
 		return DisplayType.isLookup(displayType)
-				|| DisplayType.Account == displayType
-				|| DisplayType.Location == displayType
-				|| DisplayType.Locator == displayType
-				|| DisplayType.PAttribute == displayType;
+			|| DisplayType.Account == displayType
+			|| DisplayType.Location == displayType
+			|| DisplayType.Locator == displayType
+			|| DisplayType.PAttribute == displayType
+		;
 	}
 
 	/**
 	 * Convert null on ""
-	 * @param value
 	 * @deprecated Use {@link StringManager#getValidString(String)} instead.
+	 * @param value
 	 * @return
 	 */
 	@Deprecated
@@ -1092,31 +1091,24 @@ public class ValueManager {
 
 	/**
 	 * Get Decode URL value
+	 * @deprecated Use {@link StringManager#getDecodeUrl(String)} instead.
 	 * @param value
 	 * @return
 	 */
+	@Deprecated
 	public static String getDecodeUrl(String value) {
-		// URL decode to change characteres
-		return getDecodeUrl(
-			value,
-			StandardCharsets.UTF_8
-		);
+		return StringManager.getDecodeUrl(value);
 	}
 	/**
 	 * Get Decode URL value
+	 * @deprecated Use {@link StringManager#getDecodeUrl(String, Charset)} instead.
 	 * @param value
+	 * @param charsetType
 	 * @return
 	 */
+	@Deprecated
 	public static String getDecodeUrl(String value, Charset charsetType) {
-		if (Util.isEmpty(value, true)) {
-			return value;
-		}
-		// URL decode to change characteres
-		String parseValue = URLDecoder.decode(
-			value,
-			charsetType
-		);
-		return parseValue;
+		return StringManager.getDecodeUrl(value, charsetType);
 	}
 
 
