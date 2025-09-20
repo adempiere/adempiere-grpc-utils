@@ -157,19 +157,22 @@ task cleanBuildPublishLocal(type: GradleBuild) {
 
 
 signing {
-	def isReleaseVersion = !version.toString().startsWith("local") && !version.toString().endsWith("-SNAPSHOT")
+	def isReleaseVersion = !version.toString().startsWith("local") &&
+		!version.toString().endsWith("build") &&
+		!version.toString().endsWith("SNAPSHOT") &&
+		!version.toString().equals("ci")
 
 	sign configurations.archives
 
 	setRequired {
 		// signing is required if this is a release version and the artifacts are to be published
 		// do not use hasTask() as this require realization of the tasks that maybe are not necessary
-		(isReleaseVersion || version.toString().equals("build")) && gradle.taskGraph.allTasks.any {
+		isReleaseVersion && gradle.taskGraph.allTasks.any {
 			it.equals(PublishToMavenRepository)
 		}
 	}
 	def signingKey = findProperty("deploySigningKey")
-    def signingPassword = findProperty("deploySigningPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.mavenJava
+	def signingPassword = findProperty("deploySigningPassword")
+	useInMemoryPgpKeys(signingKey, signingPassword)
+	sign publishing.publications.mavenJava
 }

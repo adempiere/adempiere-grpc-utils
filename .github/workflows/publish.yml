@@ -1,9 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 # This file was contributed by Carlos Parada, Edwin Betancourt and Yamel Senih from ERP Consultores y Asociados, C.A
 
-name: Publish With gradle to maven central
+name: Publish With gradle to maven Sonatype/GitHub Packages
 
-# Controls when the action will run. 
+permissions:
+  contents: write # to upload release assets
+  packages: write # to publish packages
+
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the develop branch
   release:
@@ -79,15 +83,38 @@ jobs:
     steps:
       - id: check_github_secrets_job
         run: |
-          if [[ "${{ secrets.DEPLOY_PUBLISH_GITHUB_URL }}" != "" && \
-                "${{ secrets.DEPLOY_USER }}" != "" && \
-                "${{ secrets.DEPLOY_TOKEN }}" != "" ]]; \
-          then
-            echo "Secrets to use a container registry are configured in the repo"
-            echo "is_have_secrets=true" >> $GITHUB_OUTPUT
+          missing_secrets=""
+          has_github_secrets="true"
+
+          # User secrets
+          if [[ -z "${{ secrets.DEPLOY_USER }}" ]]; then
+            missing_secrets="$missing_secrets DEPLOY_USER"
+            # has_github_secrets="false"
+          fi
+
+          if [[ -z "${{ secrets.DEPLOY_TOKEN }}" ]]; then
+            missing_secrets="$missing_secrets DEPLOY_TOKEN"
+            # has_github_secrets="false"
+          fi
+
+          # Verify optional secrets but report if they are missing
+          if [[ -z "${{ secrets.DEPLOY_PUBLISH_GITHUB_URL }}" ]]; then
+            echo "⚠️ DEPLOY_PUBLISH_GITHUB_URL not set, using default: ${{ env.DEFAULT_DEPLOY_PUBLISH_GITHUB_URL }}"
+          fi
+
+          # if [[ -z "${{ secrets.DEPLOY_REPOSITORY }}" ]]; then
+          #   echo "⚠️ DEPLOY_REPOSITORY not set, using default: ${{ env.DEFAULT_DEPLOY_REPOSITORY }}"
+          # fi
+
+          # Output of results
+          echo "is_have_secrets=$has_github_secrets" >> $GITHUB_OUTPUT
+          echo "missing_secrets=$missing_secrets" >> $GITHUB_OUTPUT
+
+          if [[ "$has_github_secrets" == "false" ]]; then
+            echo "❌ Missing required secrets:$missing_secrets"
+            echo "Please configure these secrets in your repository settings."
           else
-            echo "Secrets to use a container registry were not configured in the repo"
-            echo "is_have_secrets=false" >> $GITHUB_OUTPUT
+            echo "✅ All required secrets are configured"
           fi
 
   publish-github:

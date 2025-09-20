@@ -3,6 +3,10 @@
 
 name: Continuous Integration with Gradle
 
+permissions:
+  contents: write # to upload release assets
+  packages: write # to publish packages
+
 # Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the develop branch
