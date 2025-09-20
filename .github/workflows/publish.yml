@@ -97,17 +97,17 @@ jobs:
             # has_github_secrets="false"
           fi
 
-          # Verificar secretos opcionales pero informar si faltan
+          # Verify optional secrets but report if they are missing
           if [[ -z "${{ secrets.DEPLOY_PUBLISH_GITHUB_URL }}" ]]; then
             echo "⚠️ DEPLOY_PUBLISH_GITHUB_URL not set, using default: ${{ env.DEFAULT_DEPLOY_PUBLISH_GITHUB_URL }}"
           fi
 
-          if [[ -z "${{ secrets.DEPLOY_REPOSITORY }}" ]]; then
-            echo "⚠️ DEPLOY_REPOSITORY not set, using default: ${{ env.DEFAULT_DEPLOY_REPOSITORY }}"
-          fi
+          # if [[ -z "${{ secrets.DEPLOY_REPOSITORY }}" ]]; then
+          #   echo "⚠️ DEPLOY_REPOSITORY not set, using default: ${{ env.DEFAULT_DEPLOY_REPOSITORY }}"
+          # fi
 
-          # Output de los resultados
-          echo "has_github_secrets=$has_github_secrets" >> $GITHUB_OUTPUT
+          # Output of results
+          echo "is_have_secrets=$has_github_secrets" >> $GITHUB_OUTPUT
           echo "missing_secrets=$missing_secrets" >> $GITHUB_OUTPUT
 
           if [[ "$has_github_secrets" == "false" ]]; then
