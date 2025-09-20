@@ -159,6 +159,7 @@ public class NumberManager {
 	}
 
 
+
 	/**
 	 * TODO: Validate null with int as Object.intValue()
 	 * @param value
@@ -249,6 +250,7 @@ public class NumberManager {
 		numberValue = bigDecimalValue.intValue();
 		return numberValue;
 	}
+
 
 	/**
  	 * @param value

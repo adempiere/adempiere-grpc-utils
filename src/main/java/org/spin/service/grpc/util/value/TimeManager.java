@@ -18,10 +18,13 @@ package org.spin.service.grpc.util.value;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
+import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 
 /**
@@ -49,6 +52,37 @@ public class TimeManager {
 	public static boolean isDate(String value) {
 		return getTimestampFromString(value) != null;
 	}
+
+
+	/**
+	 * Get Date
+	 * @return
+	 */
+	public static Timestamp getDate() {
+		return TimeUtil.getDay(System.currentTimeMillis());
+	}
+
+
+	/**
+	 * 	Return DateTime + last time
+	 * 	@param dateTime Date and Time
+	 * 	@param offset minute offset
+	 * 	@return dateTime + offset in minutes
+	 */
+	static public Timestamp getDayLastTime(Timestamp dateTime) {
+		if (dateTime == null) {
+			dateTime = new Timestamp(System.currentTimeMillis());
+		}
+		//
+		GregorianCalendar cal = new GregorianCalendar();
+		cal.setTime(dateTime);
+		cal.set(Calendar.HOUR_OF_DAY, 23);
+		cal.set(Calendar.MINUTE, 59);
+		cal.set(Calendar.SECOND, 59);
+		cal.set(Calendar.MILLISECOND, 999);
+		return new Timestamp (cal.getTimeInMillis());
+	}	//	addMinutes
+
 
 
 	public static Timestamp getTimestampFromObject(Object value) {
@@ -188,19 +222,8 @@ public class TimeManager {
 	}
 
 
-	/**
-	 * @link ValueManager.getDateFromTimestampDate
-	 * @param value
-	 * @return
-	 * @deprecated {@link ValueManager.getDateFromTimestampDate(com.google.protobuf.Timestamp)}
-	 */
-	@Deprecated
-	public static Timestamp convertValueToDate(com.google.protobuf.Timestamp value) {
-		return ValueManager.getDateFromTimestampDate(value);
-	}
-
 	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
-		return ValueManager.getTimestampFromDate(value);
+		return ValueManager.getProtoTimestampFromTimestamp(value);
 	}
 
 }
