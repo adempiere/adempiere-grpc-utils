@@ -1,13 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 # This file was contributed by Carlos Parada, Edwin Betancourt and Yamel Senih from ERP Consultores y Asociados, C.A
 
-name: Publish With gradle to maven central
+name: Publish With gradle to maven Sonatype/GitHub Packages
 
 permissions:
   contents: write # to upload release assets
   packages: write # to publish packages
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the develop branch
   release:
@@ -89,12 +89,12 @@ jobs:
           # User secrets
           if [[ -z "${{ secrets.DEPLOY_USER }}" ]]; then
             missing_secrets="$missing_secrets DEPLOY_USER"
-            has_github_secrets="false"
+            # has_github_secrets="false"
           fi
 
           if [[ -z "${{ secrets.DEPLOY_TOKEN }}" ]]; then
             missing_secrets="$missing_secrets DEPLOY_TOKEN"
-            has_github_secrets="false"
+            # has_github_secrets="false"
           fi
 
           # Verificar secretos opcionales pero informar si faltan
