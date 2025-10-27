@@ -141,10 +141,14 @@ public class SessionManager {
 			if(!Util.isEmpty(defaultLanguage, true)) {
 				return defaultLanguage;
 			}
-			defaultLanguage = DB.getSQLValueString(null, "SELECT AD_Language "
-					+ "FROM AD_Language "
-					+ "WHERE LanguageISO = ? "
-					+ "AND (IsSystemLanguage = 'Y' OR IsBaseLanguage = 'Y')", language);
+			final String sql = "SELECT AD_Language "
+				+ "FROM AD_Language "
+				+ "WHERE LanguageISO = ? "
+					+ "AND (IsSystemLanguage = 'Y' OR IsBaseLanguage = 'Y') "
+					// TODO: Add `IsActive` flag?
+					+ "AND ROWNUM = 1 "
+			;
+			defaultLanguage = DB.getSQLValueString(null, sql, language);
 			//	Set language
 			languageCache.put(language, defaultLanguage);
 		}
@@ -633,15 +637,40 @@ public class SessionManager {
 		if (userId < 0) {
 			return -1;
 		}
-		String sql = "SELECT ur.AD_Role_ID "
-			+ "FROM AD_User_Roles ur "
+		final String sql = "SELECT ur.AD_Role_ID "
+			+ "FROM AD_User_Roles AS ur "
 			+ "INNER JOIN AD_Role AS r ON ur.AD_Role_ID = r.AD_Role_ID "
-			+ "WHERE ur.AD_User_ID = ? AND ur.IsActive = 'Y' "
-			+ "AND r.IsActive = 'Y' "
-			+ "AND ((r.IsAccessAllOrgs = 'Y' AND EXISTS(SELECT 1 FROM AD_Org AS o WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) AND o.IsActive = 'Y' AND o.IsSummary = 'N') ) "
-			+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess AS ro WHERE ro.AD_Role_ID = ur.AD_Role_ID AND ro.IsActive = 'Y') ) "
-			+ "OR (r.IsUseUserOrgAccess = 'Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess AS uo WHERE uo.AD_User_ID = ur.AD_User_ID AND uo.IsActive = 'Y') )) "
-			+ "ORDER BY COALESCE(ur.IsDefault,'N') DESC";
+			+ "WHERE ur.AD_User_ID = ? "
+				+ "AND ur.IsActive = 'Y' "
+				+ "AND r.IsActive = 'Y' "
+				+ "AND ("
+					+ "("
+						+ "r.IsAccessAllOrgs = 'Y' AND EXISTS("
+							+ "SELECT 1 FROM AD_Org AS o "
+							+ "WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) "
+								+ "AND o.IsActive = 'Y' "
+								+ "AND o.IsSummary = 'N' "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
+						+ ")"
+					+ ") "
+					+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS("
+						+ "SELECT 1 FROM AD_Role_OrgAccess AS ro "
+							+ "WHERE ro.AD_Role_ID = ur.AD_Role_ID "
+								+ "AND ro.IsActive = 'Y'"
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
+						+ ")"
+					+ ") "
+					+ "OR ("
+						+ "r.IsUseUserOrgAccess = 'Y' AND EXISTS("
+							+ "SELECT 1 FROM AD_User_OrgAccess AS uo "
+							+ "WHERE uo.AD_User_ID = ur.AD_User_ID "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
+							+ "AND uo.IsActive = 'Y' "
+						+ ")"
+					+ ")"
+				+ ") "
+				+ "AND ROWNUM = 1 "
+			+ "ORDER BY COALESCE(ur.IsDefault, 'N') DESC";
 		return DB.getSQLValue(null, sql, userId);
 	}
 
@@ -656,16 +685,34 @@ public class SessionManager {
 			return -1;
 		}
 		String organizationSQL = "SELECT o.AD_Org_ID "
-			+ "FROM AD_Role r "
-			+ "INNER JOIN AD_Client c ON(c.AD_Client_ID = r.AD_Client_ID) "
-			+ "INNER JOIN AD_Org o ON(c.AD_Client_ID=o.AD_Client_ID OR o.AD_Org_ID=0) "
-			+ "WHERE r.AD_Role_ID=? "
-			+ " AND o.IsActive='Y' AND o.IsSummary='N'"
-			+ " AND (r.IsAccessAllOrgs='Y' "
-				+ "OR (r.IsUseUserOrgAccess='N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess ra WHERE ra.AD_Org_ID = o.AD_Org_ID AND ra.AD_Role_ID = r.AD_Role_ID AND ra.IsActive='Y')) "
-				+ "OR (r.IsUseUserOrgAccess='Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess ua WHERE ua.AD_Org_ID = o.AD_Org_ID AND ua.AD_User_ID = ? AND ua.IsActive='Y'))"
+			+ "FROM AD_Role AS r "
+			+ "INNER JOIN AD_Client AS c ON(c.AD_Client_ID = r.AD_Client_ID) "
+			+ "INNER JOIN AD_Org AS o ON(c.AD_Client_ID = o.AD_Client_ID OR o.AD_Org_ID = 0) "
+			+ "WHERE r.AD_Role_ID = ? "
+				+ "AND o.IsActive = 'Y' AND o.IsSummary = 'N' "
+				+ "AND ("
+					+ "r.IsAccessAllOrgs = 'Y' "
+					+ "OR ("
+						+ "r.IsUseUserOrgAccess = 'N' AND EXISTS("
+							+ "SELECT 1 FROM AD_Role_OrgAccess AS ra "
+							+ "WHERE ra.AD_Org_ID = o.AD_Org_ID "
+								+ "AND ra.AD_Role_ID = r.AD_Role_ID "
+								+ "AND ra.IsActive = 'Y' "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
+						+ ")"
+					+ ") "
+					+ "OR ("
+						+ "r.IsUseUserOrgAccess = 'Y' AND EXISTS("
+							+ "SELECT 1 FROM AD_User_OrgAccess AS ua "
+								+ "WHERE ua.AD_Org_ID = o.AD_Org_ID "
+									+ "AND ua.AD_User_ID = ? "
+									+ "AND ua.IsActive = 'Y' "
+									// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
+						+ ")"
+					+ ")"
 				+ ") "
-			+ "ORDER BY o.Name";
+				+ "AND ROWNUM = 1 "
+			+ "ORDER BY o.Name ";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
 	}
 	
@@ -678,7 +725,14 @@ public class SessionManager {
 		if (organizationId < 0) {
 			return -1;
 		}
-		String sql = "SELECT M_Warehouse_ID FROM M_Warehouse WHERE IsActive = 'Y' AND AD_Org_ID = ? AND IsInTransit='N' ORDER BY Name";
+		final String sql = "SELECT M_Warehouse_ID "
+			+ "FROM M_Warehouse "
+			+ "WHERE IsActive = 'Y' "
+				+ "AND AD_Org_ID = ? "
+				+ "AND IsInTransit = 'N' "
+				+ "AND ROWNUM = 1 "
+			+ "ORDER BY Name "
+		;
 		return DB.getSQLValue(null, sql, organizationId);
 	}
 
@@ -726,9 +780,11 @@ public class SessionManager {
 		int orgId = Env.getAD_Org_ID(context);
 		//	AccountSchema Info (first)
 		String sql = "SELECT * "
-			+ "FROM C_AcctSchema a, AD_ClientInfo c "
-			+ "WHERE a.C_AcctSchema_ID=c.C_AcctSchema1_ID "
-			+ "AND c.AD_Client_ID=?";
+			+ "FROM C_AcctSchema AS a, AD_ClientInfo AS c "
+			+ "WHERE a.C_AcctSchema_ID = c.C_AcctSchema1_ID "
+				+ "AND c.AD_Client_ID = ? "
+				+ "AND ROWNUM = 1 "
+		;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
@@ -769,8 +825,9 @@ public class SessionManager {
 			//	Accounting Elements
 			sql = "SELECT ElementType "
 				+ "FROM C_AcctSchema_Element "
-				+ "WHERE C_AcctSchema_ID=?"
-				+ " AND IsActive='Y'";
+				+ "WHERE C_AcctSchema_ID = ? "
+					+ "AND IsActive = 'Y' "
+			;
 			pstmt = DB.prepareStatement(sql, null);
 			pstmt.setInt(1, acctSchemaId);
 			rs = pstmt.executeQuery();
@@ -784,14 +841,15 @@ public class SessionManager {
 			//	overwriting superseeded ones. Window specific is read in Mainain
 			sql = "SELECT Attribute, Value, AD_Window_ID "
 				+ "FROM AD_Preference "
-				+ "WHERE AD_Client_ID IN (0, @#AD_Client_ID@)"
-				+ " AND AD_Org_ID IN (0, @#AD_Org_ID@)"
-				+ " AND (AD_User_ID IS NULL OR AD_User_ID=0 OR AD_User_ID=@#AD_User_ID@)"
-				+ " AND IsActive='Y' "
-				+ "ORDER BY Attribute, AD_Client_ID, AD_User_ID DESC, AD_Org_ID";
+				+ "WHERE AD_Client_ID IN (0, @#AD_Client_ID@) "
+					+ "AND AD_Org_ID IN (0, @#AD_Org_ID@) "
+					+ "AND (AD_User_ID IS NULL OR AD_User_ID = 0 OR AD_User_ID = @#AD_User_ID@) "
+					+ "AND IsActive = 'Y' "
+				+ "ORDER BY Attribute, AD_Client_ID, AD_User_ID DESC, AD_Org_ID"
+			;
 				//	the last one overwrites - System - Client - User - Org - Window
 			sql = Env.parseContext(context, 0, sql, false);
-			if (sql.length() == 0) {
+			if (Util.isEmpty(sql, true)) {
 				log.log(Level.SEVERE, "loadPreferences - Missing Environment");
 			} else {
 				pstmt = DB.prepareStatement(sql, null);
@@ -817,14 +875,15 @@ public class SessionManager {
 				+ "FROM AD_Column AS c "
 				+ "INNER JOIN AD_Table AS t "
 					+ "ON (c.AD_Table_ID = t.AD_Table_ID) "
-				+ "WHERE t.IsActive='Y'"
-					+ "AND c.IsKey='Y' "
+				+ "WHERE t.IsActive = 'Y'"
+					+ "AND c.IsKey = 'Y' "
 					+ "AND EXISTS ("
 						+ "SELECT 1 "
 						+ "FROM AD_Column AS cc "
-						+ " WHERE cc.IsActive='Y' "
+						+ " WHERE cc.IsActive = 'Y' "
 							+ "AND ColumnName = 'IsDefault' "
 							+ "AND t.AD_Table_ID = cc.AD_Table_ID"
+							// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 					+ ")"
 					// TODO: Only conversion type, and table dimensions
 					+ "AND t.AD_Table_ID IN(" + I_C_ConversionType.Table_ID + ") "
@@ -837,7 +896,7 @@ public class SessionManager {
 			rs.close();
 			pstmt.close();
 		} catch (SQLException e) {
-			log.log(Level.SEVERE, "loadPreferences", e);
+			log.log(Level.WARNING, "loadPreferences", e);
 			e.printStackTrace();
 		} finally {
 			pstmt = null;
@@ -868,8 +927,8 @@ public class SessionManager {
 		//
 		String sql = "SELECT " + columnName + " "
 			+ "FROM " + tableName + " "
-			+ "WHERE IsActive='Y' "
-				+ "AND IsDefault='Y' "
+			+ "WHERE IsActive = 'Y' "
+				+ "AND IsDefault = 'Y' "
 				+ "AND ROWNUM = 1 "
 			+ "ORDER BY AD_Client_ID DESC, AD_Org_ID DESC"
 		;
@@ -892,7 +951,7 @@ public class SessionManager {
 			pstmt.close();
 			pstmt = null;
 		} catch (SQLException e) {
-			log.log(Level.SEVERE, tableName + " (" + sql + ")", e);
+			log.log(Level.WARNING, tableName + " (" + sql + ")", e);
 			e.printStackTrace();
 			return;
 		} finally {
