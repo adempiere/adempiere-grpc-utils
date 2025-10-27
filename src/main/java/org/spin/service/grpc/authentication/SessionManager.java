@@ -45,6 +45,7 @@ import org.compiere.model.MOrg;
 import org.compiere.model.MRole;
 import org.compiere.model.MSession;
 import org.compiere.model.MSysConfig;
+import org.compiere.model.MTable;
 import org.compiere.model.MUser;
 import org.compiere.model.MWarehouse;
 import org.compiere.model.ModelValidationEngine;
@@ -191,10 +192,14 @@ public class SessionManager {
 		if (Util.isEmpty(bearerToken)) {
 			return sessionId;
 		}
+		final MTable tableUserAuthentication = MTable.get(Env.getCtx(), I_AD_User_Authentication.Table_Name);
+		if (tableUserAuthentication == null || tableUserAuthentication.getAD_Table_ID() <= 0) {
+			return sessionId;
+		}
 		if (!openIdSessionCache.containsKey(bearerToken)) {
 			MUserAuthentication userAuthentication = new Query(
 				Env.getCtx(),
-				I_AD_User_Authentication.Table_Name,
+				tableUserAuthentication,
 				"AccessToken = ?",
 				null
 			)
@@ -352,9 +357,13 @@ public class SessionManager {
 	public static String getOpenIDToken(MSession session) {
 		String bearerToken = null;
 
+		final MTable tableUserAuthentication = MTable.get(Env.getCtx(), I_AD_User_Authentication.Table_Name);
+		if (tableUserAuthentication == null || tableUserAuthentication.getAD_Table_ID() <= 0) {
+			return bearerToken;
+		}
 		Integer userAuthenticationId = new Query(
 			session.getCtx(),
-			I_AD_User_Authentication.Table_Name,
+			tableUserAuthentication,
 			"AD_User_ID = ?",
 			null
 		)
