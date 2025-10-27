@@ -649,18 +649,21 @@ public class SessionManager {
 							+ "WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) "
 								+ "AND o.IsActive = 'Y' "
 								+ "AND o.IsSummary = 'N' "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 						+ ")"
 					+ ") "
 					+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS("
 						+ "SELECT 1 FROM AD_Role_OrgAccess AS ro "
 							+ "WHERE ro.AD_Role_ID = ur.AD_Role_ID "
 								+ "AND ro.IsActive = 'Y'"
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 						+ ")"
 					+ ") "
 					+ "OR ("
 						+ "r.IsUseUserOrgAccess = 'Y' AND EXISTS("
 							+ "SELECT 1 FROM AD_User_OrgAccess AS uo "
 							+ "WHERE uo.AD_User_ID = ur.AD_User_ID "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 							+ "AND uo.IsActive = 'Y' "
 						+ ")"
 					+ ")"
@@ -694,6 +697,7 @@ public class SessionManager {
 							+ "WHERE ra.AD_Org_ID = o.AD_Org_ID "
 								+ "AND ra.AD_Role_ID = r.AD_Role_ID "
 								+ "AND ra.IsActive = 'Y' "
+								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 						+ ")"
 					+ ") "
 					+ "OR ("
@@ -702,6 +706,7 @@ public class SessionManager {
 								+ "WHERE ua.AD_Org_ID = o.AD_Org_ID "
 									+ "AND ua.AD_User_ID = ? "
 									+ "AND ua.IsActive = 'Y' "
+									// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 						+ ")"
 					+ ")"
 				+ ") "
@@ -877,6 +882,7 @@ public class SessionManager {
 						+ " WHERE cc.IsActive = 'Y' "
 							+ "AND ColumnName = 'IsDefault' "
 							+ "AND t.AD_Table_ID = cc.AD_Table_ID"
+							// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 					+ ")"
 					// TODO: Only conversion type, and table dimensions
 					+ "AND t.AD_Table_ID IN(" + I_C_ConversionType.Table_ID + ") "
