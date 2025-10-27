@@ -326,6 +326,7 @@ public class SessionManager {
 		MSession session = MSession.get(context, true);
 		if (!Util.isEmpty(clientVersion, true)) {
 			session.setWebSession(clientVersion);
+			session.saveEx();
 		}
 		Env.setContext (context, "#AD_Session_ID", session.getAD_Session_ID());
 		Env.setContext (context, "#Session_UUID", session.getUUID());
