@@ -145,6 +145,7 @@ public class SessionManager {
 				+ "FROM AD_Language "
 				+ "WHERE LanguageISO = ? "
 					+ "AND (IsSystemLanguage = 'Y' OR IsBaseLanguage = 'Y') "
+					// TODO: Add `IsActive` flag?
 					+ "AND ROWNUM = 1 "
 			;
 			defaultLanguage = DB.getSQLValueString(null, sql, language);
