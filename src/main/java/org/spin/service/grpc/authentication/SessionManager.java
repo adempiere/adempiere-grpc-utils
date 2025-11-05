@@ -266,7 +266,7 @@ public class SessionManager {
 		}
 		//	Get Values from role
 		if(SessionManager.roleId < 0) {
-			throw new AdempiereException("@AD_User_ID@ / @AD_Role_ID@ / @AD_Org_ID@ @NotFound@");
+			throw new AdempiereException("@AD_Role_ID@ @NotFound@");
 		}
 		//	
 		if(SessionManager.organizationId < 0) {
@@ -572,10 +572,13 @@ public class SessionManager {
 	 */
 	public static MADToken createSessionFromToken(String tokenValue) {
 		if(Util.isEmpty(tokenValue, true)) {
-			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
+			throw new AdempiereException("@FillMandatory@ @AD_Token_ID@");
 		}
 		// Remove `Bearer` word from token
 		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
+		if(Util.isEmpty(tokenValue, true)) {
+			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
+		}
 		//	
 		try {
 			ITokenGenerator generator = TokenGeneratorHandler.getInstance()
@@ -637,7 +640,7 @@ public class SessionManager {
 		if (userId < 0) {
 			return -1;
 		}
-		final String sql = "SELECT ur.AD_Role_ID "
+		final String roleSQL = "SELECT ur.AD_Role_ID "
 			+ "FROM AD_User_Roles AS ur "
 			+ "INNER JOIN AD_Role AS r ON ur.AD_Role_ID = r.AD_Role_ID "
 			+ "WHERE ur.AD_User_ID = ? "
@@ -664,14 +667,14 @@ public class SessionManager {
 						+ "r.IsUseUserOrgAccess = 'Y' AND EXISTS("
 							+ "SELECT 1 FROM AD_User_OrgAccess AS uo "
 							+ "WHERE uo.AD_User_ID = ur.AD_User_ID "
-								// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 							+ "AND uo.IsActive = 'Y' "
+							// TODO: add `LIMIT 1` or `AND ROWNUM = 1` to best performance
 						+ ")"
 					+ ")"
 				+ ") "
 				+ "AND ROWNUM = 1 "
 			+ "ORDER BY COALESCE(ur.IsDefault, 'N') DESC";
-		return DB.getSQLValue(null, sql, userId);
+		return DB.getSQLValue(null, roleSQL, userId);
 	}
 
 	/**
@@ -684,7 +687,7 @@ public class SessionManager {
 		if (roleId < 0 && userId < 1) {
 			return -1;
 		}
-		String organizationSQL = "SELECT o.AD_Org_ID "
+		final String organizationSQL = "SELECT o.AD_Org_ID "
 			+ "FROM AD_Role AS r "
 			+ "INNER JOIN AD_Client AS c ON(c.AD_Client_ID = r.AD_Client_ID) "
 			+ "INNER JOIN AD_Org AS o ON(c.AD_Client_ID = o.AD_Client_ID OR o.AD_Org_ID = 0) "
@@ -725,7 +728,7 @@ public class SessionManager {
 		if (organizationId < 0) {
 			return -1;
 		}
-		final String sql = "SELECT M_Warehouse_ID "
+		final String warehouseSQL = "SELECT M_Warehouse_ID "
 			+ "FROM M_Warehouse "
 			+ "WHERE IsActive = 'Y' "
 				+ "AND AD_Org_ID = ? "
@@ -733,7 +736,7 @@ public class SessionManager {
 				+ "AND ROWNUM = 1 "
 			+ "ORDER BY Name "
 		;
-		return DB.getSQLValue(null, sql, organizationId);
+		return DB.getSQLValue(null, warehouseSQL, organizationId);
 	}
 
 	/**
@@ -808,7 +811,7 @@ public class SessionManager {
 			if(ass != null && ass.length > 1) {
 				for(MAcctSchema as : ass) {
 					acctSchemaId = MClientInfo.get(Env.getCtx(), clientId).getC_AcctSchema1_ID();
-					if (as.getAD_OrgOnly_ID() != 0) {
+					if (as.getAD_OrgOnly_ID() > 0) {
 						if (as.isSkipOrg(orgId)) {
 							continue;
 						} else {
