@@ -16,9 +16,11 @@
 package org.spin.service.grpc.util.value;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import org.compiere.util.Util;
 
+import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
 /**
@@ -313,6 +315,151 @@ public class NumberManager {
 			).build();
 		}
 		return Value.newBuilder().build();
+	}
+
+
+
+	/**
+	 * Get integer from a value
+	 * @param value
+	 * @return
+	 */
+	public static int getIntegerFromProtoValue(Value value) {
+		if (value == null) {
+			return 0;
+		}
+		int intValue = (int) value.getNumberValue();
+		if (intValue == 0 && value.hasStringValue()) {
+			intValue = NumberManager.getIntFromString(
+				value.getStringValue()
+			);
+		}
+		return intValue;
+	}
+
+	/**
+	 * Get Proto Value from Integer
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromInteger(Integer value) {
+		if(value == null) {
+			return ValueManager.getProtoValueFromNull();
+		}
+		//	default
+		return getProtoValueFromInt(
+			value.intValue()
+		);
+	}
+	/**
+	 * Get Proto Value alue from Int
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromInt(int value) {
+		//	default
+		return Value.newBuilder().setNumberValue(value);
+	}
+
+
+	/**
+	 * Validate if is a decimal value
+	 * @param value
+	 * @return
+	 */
+	public static boolean isDecimalProtoValue(Value value) {
+		if (value == null) {
+			return false;
+		}
+		Map<String, Value> values = value.getStructValue().getFieldsMap();
+		if(values == null) {
+			return false;
+		}
+		Value type = values.get(ValueManager.TYPE_KEY);
+		if(type == null) {
+			return false;
+		}
+		String validType = TextManager.getValidString(
+			type.getStringValue()
+		);
+		return validType.equals(ValueManager.TYPE_DECIMAL);
+	}
+
+	/**
+	 * Get BigDecimal from Value object
+	 * @param decimalValue
+	 * @return BigDecimal
+	 */
+	public static BigDecimal getBigDecimalFromProtoValue(Value decimalValue) {
+		if(decimalValue == null
+				|| decimalValue.hasNullValue()
+				|| !(decimalValue.hasStringValue() || decimalValue.hasNumberValue() || decimalValue.hasStructValue())) {
+			return null;
+		}
+
+		if (decimalValue.hasStructValue()) {
+			Map<String, Value> values = decimalValue.getStructValue().getFieldsMap();
+			if(values != null && !values.isEmpty()) {
+				Value type = values.get(ValueManager.TYPE_KEY);
+				if (type != null && ValueManager.TYPE_DECIMAL.equals(type.getStringValue())) {
+					Value value = values.get(ValueManager.VALUE_KEY);
+					if (value != null) {
+						if (!Util.isEmpty(value.getStringValue(), false)) {
+							return NumberManager.getBigDecimalFromString(
+								value.getStringValue()
+							);
+						}
+						if (value.hasNumberValue()) {
+							return NumberManager.getBigDecimalFromDouble(
+								value.getNumberValue()
+							);
+						}
+					}
+				}
+			}
+		}
+		if (!Util.isEmpty(decimalValue.getStringValue(), false)) {
+			return NumberManager.getBigDecimalFromString(
+				decimalValue.getStringValue()
+			);
+		}
+		if (decimalValue.hasNumberValue()) {
+			return NumberManager.getBigDecimalFromDouble(
+				decimalValue.getNumberValue()
+			);
+		}
+		return null;
+	}
+
+	/**
+	 * Get Value object from BigDecimal
+	 * @param value
+	 * @return Value.Builder
+	 */
+	public static Value.Builder getProtoValueFromBigDecimal(BigDecimal value) {
+		Struct.Builder decimalValue = Struct.newBuilder();
+		decimalValue.putFields(
+			ValueManager.TYPE_KEY,
+			Value.newBuilder().setStringValue(ValueManager.TYPE_DECIMAL).build()
+		);
+
+		Value.Builder valueBuilder = Value.newBuilder();
+		if (value == null) {
+			valueBuilder = ValueManager.getProtoValueFromNull();
+		} else {
+			String valueString = NumberManager.getBigDecimalToString(
+				value
+			);
+			valueBuilder.setStringValue(
+				valueString
+			);
+		}
+
+		decimalValue.putFields(
+			ValueManager.VALUE_KEY,
+			valueBuilder.build()
+		);
+		return Value.newBuilder().setStructValue(decimalValue);
 	}
 
 }

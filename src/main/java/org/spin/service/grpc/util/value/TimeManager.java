@@ -15,17 +15,25 @@
 
 package org.spin.service.grpc.util.value;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Map;
 
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
+
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 
 /**
  * Class for handle Time (TimesTamp, Date, Long) values
@@ -99,8 +107,28 @@ public class TimeManager {
 				(Integer) value
 			);
 		} else if (value instanceof String) {
-			dateValue = TimeManager.getTimestampFromString(
-				(String) value
+			String stringValue = (String) value;
+			Integer integerValue = NumberManager.getIntegerFromString(stringValue);
+			BigDecimal bigDecimalValue = NumberManager.getBigDecimalFromString(stringValue);
+			if (integerValue != null) {
+				dateValue = TimeManager.getTimestampFromInteger(integerValue);
+			} else if (bigDecimalValue != null) {
+				dateValue = TimeManager.getTimestampFromLong(
+					bigDecimalValue
+						.setScale(0, RoundingMode.HALF_UP)
+						.longValueExact()
+				);
+			} else {
+				dateValue = TimeManager.getTimestampFromString(
+					stringValue
+				);
+			}
+		} else if (value instanceof BigDecimal) {
+			BigDecimal bigDecimalValue = (BigDecimal) value;
+			dateValue = TimeManager.getTimestampFromLong(
+				bigDecimalValue
+					.setScale(0, RoundingMode.HALF_UP)
+					.longValueExact()
 			);
 		} else if (value instanceof Timestamp) {
 			dateValue = (Timestamp) value;
@@ -222,8 +250,155 @@ public class TimeManager {
 	}
 
 
+
+	/**
+	 * Validate if a value is date
+	 * @param value
+	 * @return
+	 */
+	public static boolean isDateProtoValue(Value value) {
+		if (value == null) {
+			return false;
+		}
+		Map<String, Value> values = value.getStructValue().getFieldsMap();
+		if(values == null) {
+			return false;
+		}
+		Value type = values.get(ValueManager.TYPE_KEY);
+		if(type == null) {
+			return false;
+		}
+		String validType = TextManager.getValidString(
+			type.getStringValue()
+		);
+		return validType.equals(ValueManager.TYPE_DATE) || validType.equals(ValueManager.TYPE_DATE_TIME);
+	}
+
+	/**
+	 * @deprecated Use {@link TimeManager#getProtoTimestampFromTimestamp(Timestamp)} instead.
+	 * @param value
+	 * @return com.google.protobuf.Timestamp
+	 */
+	@Deprecated
 	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
-		return ValueManager.getProtoTimestampFromTimestamp(value);
+		return TimeManager.getProtoTimestampFromTimestamp(value);
+	}
+	/**
+	 * Get google.protobuf.Timestamp from Timestamp
+	 * @param dateValue
+	 * @return com.google.protobuf.Timestamp
+	 */
+	public static com.google.protobuf.Timestamp getProtoTimestampFromTimestamp(Timestamp dateValue) {
+		Timestamp minDate = TimeManager.getTimestampFromProtoTimestamp(com.google.protobuf.util.Timestamps.MIN_VALUE);
+		if (dateValue == null || minDate.equals(dateValue)) {
+			// return com.google.protobuf.Timestamp.newBuilder().build(); // 1970-01-01T00:00:00Z
+			// return com.google.protobuf.Timestamp.getDefaultInstance(); // 1970-01-01T00:00:00Z
+			// return com.google.protobuf.util.Timestamps.EPOCH; // 1970-01-01T00:00:00Z
+			return com.google.protobuf.util.Timestamps.MIN_VALUE; // 0001-01-01T00:00:00Z
+		}
+		return com.google.protobuf.util.Timestamps.fromMillis(
+			dateValue.getTime()
+		);
+	}
+
+	/**
+	 * Get Date from value
+	 * @param dateValue
+	 * @return com.google.protobuf.Timestamp
+	 */
+	public static Timestamp getTimestampFromProtoTimestamp(com.google.protobuf.Timestamp dateValue) {
+		if(dateValue == null || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
+			return null;
+		}
+		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(
+			dateValue.getSeconds(),
+			dateValue.getNanos(),
+			ZoneOffset.UTC
+		);
+		return Timestamp.valueOf(dateTime);
+	}
+
+	/**
+	 * Get Date from a value
+	 * @param dateValue
+	 * @return
+	 */
+	public static Timestamp getTimestampFromProtoValue(Value dateValue) {
+		if(dateValue == null
+				|| dateValue.hasNullValue()
+				|| !(dateValue.hasStringValue() || dateValue.hasNumberValue() || dateValue.hasStructValue())) {
+			return null;
+		}
+
+		if (dateValue.hasStructValue()) {
+			Map<String, Value> values = dateValue.getStructValue().getFieldsMap();
+			if(values == null) {
+				return null;
+			}
+			Value type = values.get(ValueManager.TYPE_KEY);
+			Value value = values.get(ValueManager.VALUE_KEY);
+			if(type == null || value == null) {
+				return null;
+			}
+			String validType = TextManager.getValidString(
+				type.getStringValue()
+			);
+			String validValue = TextManager.getValidString(
+				value.getStringValue()
+			);
+			if((!validType.equals(ValueManager.TYPE_DATE)
+					&& !validType.equals(ValueManager.TYPE_DATE_TIME))
+					|| validValue.length() == 0) {
+				return null;
+			}
+			return TimeManager.getTimestampFromString(
+				validValue
+			);
+		}
+		if (dateValue.hasStringValue()) {
+			return TimeManager.getTimestampFromString(
+				dateValue.getStringValue()
+			);
+		}
+		if (dateValue.hasNumberValue()) {
+			return TimeManager.getTimestampFromDouble(
+				dateValue.getNumberValue()
+			);
+		}
+		return null;
+	}
+
+	/**
+	 * Get value from a date
+	 * @param value
+	 * @return Value.Builder
+	 */
+	public static Value.Builder getProtoValueFromTimestamp(Timestamp value) {
+		Struct.Builder date = Struct.newBuilder();
+		date.putFields(
+			ValueManager.TYPE_KEY,
+			Value.newBuilder().setStringValue(
+				ValueManager.TYPE_DATE
+			).build()
+		);
+
+		Value.Builder valueBuilder = Value.newBuilder();
+		if (value == null) {
+			valueBuilder = ValueManager.getProtoValueFromNull();
+		} else {
+			String valueString = TimeManager.getTimestampToString(
+				value
+			);
+			valueBuilder.setStringValue(
+				valueString
+			);
+		}
+
+		date.putFields(
+			ValueManager.VALUE_KEY,
+			valueBuilder.build()
+		);
+		return Value.newBuilder().setStructValue(date);
 	}
 
 }

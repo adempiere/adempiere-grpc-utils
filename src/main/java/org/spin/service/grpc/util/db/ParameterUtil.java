@@ -33,7 +33,7 @@ import org.compiere.util.DisplayType;
 import org.compiere.util.Util;
 import org.spin.service.grpc.util.value.BooleanManager;
 import org.spin.service.grpc.util.value.NumberManager;
-import org.spin.service.grpc.util.value.StringManager;
+import org.spin.service.grpc.util.value.TextManager;
 import org.spin.service.grpc.util.value.TimeManager;
 import org.spin.service.grpc.util.value.ValueManager;
 
@@ -132,17 +132,17 @@ public class ParameterUtil {
 	 * @throws SQLException
 	 */
 	public static void setParameterFromValue(PreparedStatement pstmt, Value grpcValue, int index) throws SQLException {
-		Object value = ValueManager.getObjectFromValue(grpcValue);
+		Object value = ValueManager.getObjectFromProtoValue(grpcValue);
 		if(value instanceof Integer) {
-			pstmt.setInt(index, ValueManager.getIntegerFromValue(grpcValue));
+			pstmt.setInt(index, NumberManager.getIntegerFromProtoValue(grpcValue));
 		} else if(value instanceof BigDecimal) {
-			pstmt.setBigDecimal(index, ValueManager.getBigDecimalFromValue(grpcValue));
+			pstmt.setBigDecimal(index, NumberManager.getBigDecimalFromProtoValue(grpcValue));
 		} else if(value instanceof Boolean) {
-			// pstmt.setBoolean(index, ValueManager.getBooleanFromValue(grpcValue));
+			// pstmt.setBoolean(index, BooleanManager.getBooleanFromValue(grpcValue));
 			String boolValue = BooleanManager.getBooleanToString((Boolean) value);
 			pstmt.setString(index, boolValue);
 		} else if(value instanceof String) {
-			pstmt.setString(index, ValueManager.getStringFromValue(grpcValue));
+			pstmt.setString(index, TextManager.getStringFromProtoValue(grpcValue));
 		} else if(value instanceof Timestamp) {
 			pstmt.setTimestamp(index, TimeManager.getTimestampFromObject(grpcValue));
 		} else {
@@ -181,7 +181,7 @@ public class ParameterUtil {
 				Value value = attributes.get(columnName);
 				if (value != null) {
 					parametersList.add(
-						ValueManager.getObjectFromValue(value)
+						ValueManager.getObjectFromProtoValue(value)
 					);
 					attributes.remove(columnName);
 				}
@@ -213,7 +213,7 @@ public class ParameterUtil {
 			transformValue = integerValue;
 			if (integerValue == null && (DisplayType.Search == displayTypeId || DisplayType.Table == displayTypeId)) {
 				// no casteable for integer, as `AD_Language`, `EntityType`
-				transformValue = StringManager.getStringFromObject(
+				transformValue = TextManager.getStringFromObject(
 					value
 				);
 			}
@@ -230,7 +230,7 @@ public class ParameterUtil {
 				value
 			);
 		} else if (DisplayType.List == displayTypeId) {
-			transformValue = StringManager.getStringFromObject(
+			transformValue = TextManager.getStringFromObject(
 				value
 			);
 			if (value instanceof Boolean) {
@@ -239,7 +239,7 @@ public class ParameterUtil {
 				);
 			}
 		} else if (DisplayType.isText(displayTypeId)) {
-			transformValue = StringManager.getStringFromObject(
+			transformValue = TextManager.getStringFromObject(
 				value
 			);
 		} else if (DisplayType.Button == displayTypeId) {

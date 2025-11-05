@@ -15,71 +15,12 @@
 
 package org.spin.service.grpc.util.value;
 
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-
-import org.compiere.util.Util;
-
 /**
  * Class for handle String values
+ * @deprecated Use {@link TextManager} instead.
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
-public class StringManager {
-
-	/**
-	 * Convert null on ""
-	 * @param value
-	 * @return
-	 */
-	public static String getValidString(String value) {
-		return Optional.ofNullable(value).orElse("");
-	}
-
-
-	/**
-	 * Convert Object to String
-	 * @param value
-	 * @return
-	 */
-	public static String getStringFromObject(Object value) {
-		if (value == null) {
-			return null;
-		}
-		// return (String) value;
-		return value.toString();
-	}
-
-
-	/**
-	 * Get Decode URL value
-	 * @param value
-	 * @return
-	 */
-	public static String getDecodeUrl(String value) {
-		// URL decode to change characteres
-		return getDecodeUrl(
-			value,
-			StandardCharsets.UTF_8
-		);
-	}
-	/**
-	 * Get Decode URL value
-	 * @param value
-	 * @param charsetType
-	 * @return
-	 */
-	public static String getDecodeUrl(String value, Charset charsetType) {
-		if (Util.isEmpty(value, true)) {
-			return value;
-		}
-		// URL decode to change characteres
-		String parseValue = URLDecoder.decode(
-			value,
-			charsetType
-		);
-		return parseValue;
-	}
+@Deprecated
+public class StringManager extends TextManager {
 
 }

@@ -163,7 +163,8 @@ public class RecordUtil {
 			transactionName
 		)
 			.setParameters(parameters)
-			.first();
+			.first()
+		;
 	}
 
 
@@ -255,9 +256,17 @@ public class RecordUtil {
 	 * @return
 	 */
 	public static int getIdFromUuid(String tableName, String uuid, String transactionName) {
-		if (Util.isEmpty(tableName, true) || Util.isEmpty(uuid, true)) {
+		if (Util.isEmpty(uuid, true)) {
 			return -1;
 		}
+		if (Util.isEmpty(tableName, true)) {
+			return -1;
+		}
+		MTable table = MTable.get(Env.getCtx(), tableName);
+		if (table == null || table.getAD_Table_ID() <= 0) {
+			return -1;
+		}
+
 		//	Get
 		return IDFinder.getIdFromUUID(Env.getCtx(), tableName, uuid, Env.getAD_Client_ID(Env.getCtx()), transactionName);
 	}
@@ -279,6 +288,9 @@ public class RecordUtil {
 	 * @return
 	 */
 	public static String getUuidFromId(String tableName, int id, String transactionName) {
+		if (id < 0) {
+			return null;
+		}
 		if (Util.isEmpty(tableName, true)) {
 			return null;
 		}

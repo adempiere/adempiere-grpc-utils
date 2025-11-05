@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.compiere.util.Util;
-import org.spin.service.grpc.util.value.ValueManager;
+import org.spin.service.grpc.util.value.TextManager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -116,7 +116,7 @@ public class SortingManager {
 	}
 
 	public static SortingManager newInstance(String sortings) {
-		final String decodeSortings = ValueManager.getDecodeUrl(
+		final String decodeSortings = TextManager.getDecodeUrl(
 			sortings
 		);
 		return new SortingManager(decodeSortings);

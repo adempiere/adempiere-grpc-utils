@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import org.compiere.util.Util;
 import org.spin.service.grpc.util.db.OperatorUtil;
-import org.spin.service.grpc.util.value.ValueManager;
+import org.spin.service.grpc.util.value.TextManager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,7 +98,7 @@ public class FilterManager {
 	}
 
 	public static FilterManager newInstance(String filters) {
-		final String decodeFilters = ValueManager.getDecodeUrl(
+		final String decodeFilters = TextManager.getDecodeUrl(
 			filters
 		);
 		return new FilterManager(decodeFilters);
