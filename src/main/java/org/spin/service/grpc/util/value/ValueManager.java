@@ -16,14 +16,9 @@
 package org.spin.service.grpc.util.value;
 
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -32,21 +27,12 @@ import org.adempiere.core.domains.models.I_C_Order;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MLookupInfo;
-import org.compiere.model.PO;
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.Language;
 import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
-import org.compiere.util.Util;
-import org.spin.service.grpc.util.base.RecordUtil;
-import org.spin.service.grpc.util.query.Filter;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.ListValue;
-import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
 /**
@@ -56,8 +42,8 @@ import com.google.protobuf.Value;
  */
 public class ValueManager {
 
-	private static final String TYPE_KEY = "type";
-	private static final String VALUE_KEY = "value";
+	public static final String TYPE_KEY = "type";
+	public static final String VALUE_KEY = "value";
 	//	Types
 	public static final String TYPE_DATE = "date";
 	public static final String TYPE_DATE_TIME = "date_time";
@@ -82,28 +68,28 @@ public class ValueManager {
 	public static Value.Builder getProtoValueFromObject(Object value) {
 		Value.Builder builder = Value.newBuilder();
 		if(value == null) {
-			return getValueFromNull();
+			return getProtoValueFromNull();
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
 			// TODO: Add support to `Float` and `Double`
-			return getValueFromBigDecimal((BigDecimal) value);
+			return NumberManager.getProtoValueFromBigDecimal((BigDecimal) value);
 		} else if (value instanceof Integer) {
-			return getValueFromInteger((Integer)value);
+			return NumberManager.getProtoValueFromInteger((Integer)value);
 		} else if (value instanceof String) {
-			return getValueFromString((String) value);
+			return TextManager.getProtoValueFromString((String) value);
 		} else if (value instanceof Boolean) {
-			return getValueFromBoolean((Boolean) value);
+			return BooleanManager.getProtoValueFromBoolean((Boolean) value);
 		} else if(value instanceof Timestamp) {
 			// TODO: Add support to `Long`
-			return getValueFromTimestamp((Timestamp) value);
+			return TimeManager.getProtoValueFromTimestamp((Timestamp) value);
 		} else if (value instanceof Map) {
-			return getProtoValueFromMap(
+			return CollectionManager.getProtoValueFromMap(
 				(Map<?, ?>) value
 			);
 		} else if (value instanceof List) {
 			// TODO: Add support to `Enum`
-			return getProtoValueFromList(
+			return CollectionManager.getProtoValueFromList(
 				(List<?>) value
 			);
 		}
@@ -111,129 +97,162 @@ public class ValueManager {
 		return builder;
 	}
 
-
 	/**
-	 * Recursive convert List to ListValue
-	 * @param values
+	 * @deprecated Use {@link ValueManager#getObjectFromProtoValue(Object)} instead. With recursive support
+	 * @param value
+	 * @return Object
+	 */
+	@Deprecated
+	public static Object getObjectFromValue(Value value) {
+		return ValueManager.getObjectFromProtoValue(value);
+	}
+	/**
+	 * Convert Object to a Proto Value
+	 * @param value
 	 * @return
 	 */
-	public static Value.Builder getProtoValueFromList(List<?> values) {
-		Value.Builder protoValue = Value.newBuilder();
-		ListValue.Builder protoListBuilder = ListValue.newBuilder();
-		
-		if (values == null) {
-			// TODO: Validate if return null or empty
-			// protoValue.setListValue(
-			// 	protoListBuilder.build()
-			// );
-			return getValueFromNull();
+	public static Object getObjectFromProtoValue(Value value) {
+		return ValueManager.getObjectFromProtoValue(value, false);
+	}
+	/**
+	 * @deprecated Use {@link ValueManager#getObjectFromProtoValue(Object, boolean)} instead. With recursive support
+	 * @param value
+	 * @return Object
+	 */
+	@Deprecated
+	public static Object getObjectFromValue(Value value, boolean uppercase) {
+		return ValueManager.getObjectFromProtoValue(value, uppercase);
+	}
+	/**
+	 * Convert Object to a Proto Value
+	 * @param value
+	 * @return
+	 */
+	public static Object getObjectFromProtoValue(Value value, boolean uppercase) {
+		if(value == null || value.hasNullValue()) {
+			return null;
 		}
-		else {
-			// Each and convert List to ListValue
-			((List<?>) values).forEach(valueItem -> {
-				Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
-				protoListBuilder.addValues(
-					protoValueItem
-				);
-			});
+		if(value.hasStringValue()) {
+			return TextManager.getStringFromProtoValue(value, uppercase);
 		}
-		protoValue.setListValue(
-			protoListBuilder.build()
-		);
-		return protoValue;
+		if(value.hasNumberValue()) {
+			return (int) value.getNumberValue();
+		}
+		if(value.hasBoolValue()) {
+			return value.getBoolValue();
+		}
+		if(value.hasStructValue()) {
+			if(NumberManager.isDecimalProtoValue(value)) {
+				return NumberManager.getBigDecimalFromProtoValue(value);
+			} else if(TimeManager.isDateProtoValue(value)) {
+				return TimeManager.getTimestampFromProtoValue(value);
+			}
+			return CollectionManager.getMapFromProtoValue(value);
+		}
+		if(value.hasListValue()) {
+			return CollectionManager.getListFromProtoValue(
+				value
+			);
+		}
+		return null;
 	}
 
 	/**
-	 * Recursive convert Map to Struct
-	 * @param values
-	 * @return
+	 * @deprecated Use {@link ValueManager#getObjectFromProtoValue(Object, int)} instead. With recursive support
+	 * @param value
+	 * @return Object
 	 */
-	public static Value.Builder getProtoValueFromMap(Map<?, ?> values) {
-		Value.Builder protoValue = Value.newBuilder();
-		if (values == null) {
-			// TODO: Validate if return null or empty
-			// protoValue.setStructValue(
-			// 	structBuilder
-			// );
-			return getValueFromNull();
-		}
-		Struct.Builder structBuilder = getStructFromMap(values);
-		protoValue.setStructValue(
-			structBuilder
-		);
-		return protoValue;
+	public static Object getObjectFromReference(Value value, int referenceId) {
+		return getObjectFromProtoValue(value, referenceId);
 	}
-
 	/**
-	 * Recursive convert Map to Struct
-	 * @param values
+	 * Get Object from value based on reference
+	 * @param value
+	 * @param referenceId
 	 * @return
 	 */
-	public static Struct.Builder getStructFromMap(Map<?, ?> values) {
-		Struct.Builder structBuilder = Struct.newBuilder();
-
-		if (values == null) {
-			return structBuilder;
+	public static Object getObjectFromProtoValue(Value value, int displayTypeId) {
+		if(value == null) {
+			return null;
 		}
-		else {
-			((Map<?, ?>) values).forEach((keyItem, valueItem) -> {
-				// key always is string
-				String structKey = "";
-				if (keyItem instanceof String) {
-					structKey = (String) keyItem;
-				} else {
-					// Handle error if key not is String
-					structKey = StringManager.getStringFromObject(keyItem);
+		if (displayTypeId <= 0) {
+			return ValueManager.getObjectFromProtoValue(value);
+		}
+		//	Validate values
+		if(DisplayType.isID(displayTypeId) || DisplayType.Integer == displayTypeId) {
+			if (DisplayType.Search == displayTypeId || DisplayType.Table == displayTypeId) {
+				Object lookupValue = ValueManager.getObjectFromProtoValue(value);
+				try {
+					// casteable for integer, except `AD_Language`, `EntityType`
+					lookupValue = Integer.valueOf(
+						lookupValue.toString()
+					);
+				} catch (Exception e) {
 				}
-
-				Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
-				structBuilder.putFields(
-					structKey,
-					protoValueItem.build()
-				);
-			});
+				return lookupValue;
+			}
+			return NumberManager.getIntegerFromProtoValue(value);
+		} else if(DisplayType.isNumeric(displayTypeId)) {
+			return NumberManager.getBigDecimalFromProtoValue(value);
+		} else if(DisplayType.YesNo == displayTypeId) {
+			return BooleanManager.getBooleanFromProtoValue(value);
+		} else if(DisplayType.isDate(displayTypeId)) {
+			return TimeManager.getTimestampFromProtoValue(value);
+		} else if(DisplayType.isText(displayTypeId) || DisplayType.List == displayTypeId) {
+			return TextManager.getStringFromProtoValue(value);
+		} else if (DisplayType.Button == displayTypeId) {
+			return getObjectFromProtoValue(value);
 		}
-		return structBuilder;
+		//	
+		return getObjectFromProtoValue(value);
 	}
 
-
-	public static Struct.Builder getStructFromFiltersList(List<Filter> filtersList) {
-		Struct.Builder structBuilder = Struct.newBuilder();
-		if (filtersList == null || filtersList.isEmpty()) {
-			return structBuilder;
-		}
-
-		filtersList.stream()
-			.filter(condition -> !Util.isEmpty(condition.getColumnName(), true))
-			.forEach(condition -> {
-				final String conditionColumnName = condition.getColumnName();
-				final Object conditionValue = condition.getValue();
-				Value.Builder protoValueItem = getProtoValueFromObject(
-					conditionValue
-				);
-				structBuilder.putFields(
-					conditionColumnName,
-					protoValueItem.build()
-				);
-			})
-		;
-
-		return structBuilder;
-	}
 
 
 	/**
-	 * Get value from null
+	 * @deprecated Use {@link ValueManager#getProtoValueFromMap(Object)} instead. With recursive support
+	 * @param values
 	 * @return
 	 */
+	@Deprecated
+	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
+		return CollectionManager.getProtoValueFromMap(values);
+	}
+
+
+
+	/**
+	 * Get NULL Value object from NULL
+	 * @deprecated Use {@link ValueManager#getProtoValueFromNull(Object)} instead. With recursive support
+	 * @param nullValue
+	 * @return Value.Builder
+	 */
+	@Deprecated
 	public static Value.Builder getValueFromNull(Object nullValue) {
-		return getValueFromNull();
+		return getProtoValueFromNull();
 	}
 	/**
-	 * Get value from null
+	 * Get NULL Value object from NULL
+	 * @param nullValue
 	 * @return
 	 */
+	public static Value.Builder getProtoValueFromNull(Object nullValue) {
+		return getProtoValueFromNull();
+	}
+	/**
+	 * Get NULL Value object from NULL
+	 * @deprecated Use {@link ValueManager#getValueFromNull()} instead. With recursive support
+	 * @return Value.Builder
+	 */
+	@Deprecated
 	public static Value.Builder getValueFromNull() {
+		return getProtoValueFromNull();
+	}
+	/**
+	 * Get NULL Value object from NULL
+	 * @return Value.Builder
+	 */
+	public static Value.Builder getProtoValueFromNull() {
 		return Value.newBuilder().setNullValue(
 			com.google.protobuf.NullValue.NULL_VALUE
 		);
@@ -241,458 +260,298 @@ public class ValueManager {
 
 
 	/**
+	 * Get Empty Value object from DisplayType
+	 * @deprecated Use {@link ValueManager#getEmptyProtoValueByReference()} instead. With recursive support
+	 * @return Value.Builder
+	 */
+	@Deprecated
+	public static Value.Builder getEmptyValueByReference(int displayTypeId) {
+		return ValueManager.getEmptyProtoValueByReference(displayTypeId);
+	}
+	/**
 	 * Get default empty value
-	 * @param referenceId
+	 * @param displayTypeId
 	 * @return
 	 */
-	public static Value.Builder getEmptyValueByReference(int referenceId) {
-		if (referenceId <= 0) {
-			return getValueFromNull();
+	public static Value.Builder getEmptyProtoValueByReference(int displayTypeId) {
+		if (displayTypeId <= 0) {
+			return getProtoValueFromNull();
 		}
-		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
+		if (DisplayType.isID(displayTypeId) || DisplayType.Integer == displayTypeId) {
 			int emptyId = 0;
-			return getValueFromInteger(emptyId);
-		} else if (DisplayType.isNumeric(referenceId)) {
-			return getValueFromBigDecimal(null);
-		} else if (DisplayType.isDate(referenceId)) {
-			return getValueFromTimestamp(null);
-		} else if (DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
+			return NumberManager.getProtoValueFromInteger(emptyId);
+		} else if (DisplayType.isNumeric(displayTypeId)) {
+			return NumberManager.getProtoValueFromBigDecimal(null);
+		} else if (DisplayType.isDate(displayTypeId)) {
+			return TimeManager.getProtoValueFromTimestamp(null);
+		} else if (DisplayType.isText(displayTypeId) || DisplayType.List == displayTypeId) {
 			;
-		} else if (DisplayType.YesNo == referenceId) {
-			return getValueFromBoolean(false);
+		} else if (DisplayType.YesNo == displayTypeId) {
+			return BooleanManager.getProtoValueFromBoolean(false);
 		}
-		return getValueFromNull();
+		return getProtoValueFromNull();
 	}
 
 
+
 	/**
-	 * Get value from Integer
+	 * @deprecated Use {@link ValueManager#getProtoValueFromInteger(Integer)} instead.
 	 * @param value
-	 * @return
+	 * @return Value.Builder
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromInteger(Integer value) {
-		if(value == null) {
-			return getValueFromNull();
-		}
-		//	default
-		return getValueFromInt(
-			value.intValue()
-		);
+		return NumberManager.getProtoValueFromInteger(value);
 	}
 	/**
-	 * Get value from Int
+	 * @deprecated Use {@link ValueManager#getProtoValueFromInt(Integer)} instead.
 	 * @param value
-	 * @return
+	 * @return Value.Builder
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromInt(int value) {
-		//	default
-		return Value.newBuilder().setNumberValue(value);
+		return NumberManager.getProtoValueFromInt(value);
+	}
+
+	/**
+	 * @deprecated Use {@link ValueManager#getIntegerFromProtoValue(Value)} instead.
+	 * @param value
+	 * @return int
+	 */
+	@Deprecated
+	public static int getIntegerFromValue(Value value) {
+		return NumberManager.getIntegerFromProtoValue(value);
 	}
 
 
+
 	/**
-	 * Get value from a string
+	 * @deprecated Use {@link ValueManager#getProtoValueFromString(String)} instead.
 	 * @param value
-	 * @return
+	 * @return Value.Builder
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromString(String value) {
-		if (value == null) {
-			return getValueFromNull();
-		}
-		return Value.newBuilder().setStringValue(
-			StringManager.getValidString(
-				value
-			)
-		);
+		return TextManager.getProtoValueFromString(value);
 	}
 
-
 	/**
-	 * Get value from a boolean value
+	 * @deprecated Use {@link ValueManager#getStringFromProtoValue(Value)} instead.
 	 * @param value
-	 * @return
-	 */
-	public static Value.Builder getValueFromBoolean(boolean value) {
-		return Value.newBuilder().setBoolValue(value);
-	}
-	/**
-	 * Get value from a Boolean value
-	 * @param value
-	 * @return
-	 */
-	public static Value.Builder getValueFromBoolean(Boolean value) {
-		if(value == null) {
-			return getValueFromNull();
-		}
-		return getValueFromBoolean(value.booleanValue());
-	}
-	/**
-	 * Get value from a String Boolean value ("Y" / "N")
-	 * @param value
-	 * @return
-	 */
-	public static Value.Builder getValueFromStringBoolean(String value) {
-		return getValueFromBoolean(
-			BooleanManager.getBooleanFromString(value)
-		);
-	}
-
-
-
-	/**
-	 * Get Value object from BigDecimal
-	 * @param value
-	 * @return
-	 */
-	public static Value.Builder getValueFromBigDecimal(BigDecimal value) {
-		Struct.Builder decimalValue = Struct.newBuilder();
-		decimalValue.putFields(
-			TYPE_KEY,
-			Value.newBuilder().setStringValue(TYPE_DECIMAL).build()
-		);
-
-		Value.Builder valueBuilder = Value.newBuilder();
-		if (value == null) {
-			valueBuilder = getValueFromNull();
-		} else {
-			String valueString = NumberManager.getBigDecimalToString(
-				value
-			);
-			valueBuilder.setStringValue(
-				valueString
-			);
-		}
-
-		decimalValue.putFields(
-			VALUE_KEY,
-			valueBuilder.build()
-		);
-		return Value.newBuilder().setStructValue(decimalValue);
-	}
-
-	/**
-	 * Get BigDecimal from Value object
-	 * @param decimalValue
-	 * @return
-	 */
-	public static BigDecimal getBigDecimalFromValue(Value decimalValue) {
-		if(decimalValue == null
-				|| decimalValue.hasNullValue()
-				|| !(decimalValue.hasStringValue() || decimalValue.hasNumberValue() || decimalValue.hasStructValue())) {
-			return null;
-		}
-
-		if (decimalValue.hasStructValue()) {
-			Map<String, Value> values = decimalValue.getStructValue().getFieldsMap();
-			if(values != null && !values.isEmpty()) {
-				Value type = values.get(TYPE_KEY);
-				if (type != null && TYPE_DECIMAL.equals(type.getStringValue())) {
-					Value value = values.get(VALUE_KEY);
-					if (value != null) {
-						if (!Util.isEmpty(value.getStringValue(), false)) {
-							return NumberManager.getBigDecimalFromString(
-								value.getStringValue()
-							);
-						}
-						if (value.hasNumberValue()) {
-							return NumberManager.getBigDecimalFromDouble(
-								value.getNumberValue()
-							);
-						}
-					}
-				}
-			}
-		}
-		if (!Util.isEmpty(decimalValue.getStringValue(), false)) {
-			return NumberManager.getBigDecimalFromString(
-				decimalValue.getStringValue()
-			);
-		}
-		if (decimalValue.hasNumberValue()) {
-			return NumberManager.getBigDecimalFromDouble(
-				decimalValue.getNumberValue()
-			);
-		}
-		return null;
-	}
-
-
-
-	/**
-	 * Get google.protobuf.Timestamp from Timestamp
-	 * @deprecated Use {@link ValueManager#getProtoTimestampFromTimestamp(Object)} instead.
-	 * @param dateValue
 	 * @return
 	 */
 	@Deprecated
-	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp dateValue) {
-		return getProtoTimestampFromTimestamp(dateValue);
-	}
-	/**
-	 * Get google.protobuf.Timestamp from Timestamp
-	 * @param dateValue
-	 * @return
-	 */
-	public static com.google.protobuf.Timestamp getProtoTimestampFromTimestamp(Timestamp dateValue) {
-		Timestamp minDate = ValueManager.getDateFromTimestampDate(com.google.protobuf.util.Timestamps.MIN_VALUE);
-		if (dateValue == null || minDate.equals(dateValue)) {
-			// return com.google.protobuf.Timestamp.newBuilder().build(); // 1970-01-01T00:00:00Z
-			// return com.google.protobuf.Timestamp.getDefaultInstance(); // 1970-01-01T00:00:00Z
-			// return com.google.protobuf.util.Timestamps.EPOCH; // 1970-01-01T00:00:00Z
-			return com.google.protobuf.util.Timestamps.MIN_VALUE; // 0001-01-01T00:00:00Z
-		}
-		return com.google.protobuf.util.Timestamps.fromMillis(
-			dateValue.getTime()
-		);
-	}
-
-
-	/**
-	 * Get Date from value
-	 * @deprecated Use {@link ValueManager#getTimestampFromProtoTimestamp(Object)} instead.
-	 * @param dateValue
-	 * @return
-	 */
-	@Deprecated
-	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
-		return getTimestampFromProtoTimestamp(dateValue);
-	}
-	/**
-	 * Get Date from value
-	 * @param dateValue
-	 * @return
-	 */
-	public static Timestamp getTimestampFromProtoTimestamp(com.google.protobuf.Timestamp dateValue) {
-		if(dateValue == null || (dateValue.getSeconds() == 0 && dateValue.getNanos() == 0)) {
-			return null;
-		}
-		LocalDateTime dateTime = LocalDateTime.ofEpochSecond(
-			dateValue.getSeconds(),
-			dateValue.getNanos(),
-			ZoneOffset.UTC
-		);
-		return Timestamp.valueOf(dateTime);
-	}
-
-	/**
-	 * Get Date from a value
-	 * @param dateValue
-	 * @return
-	 */
-	public static Timestamp getTimestampFromValue(Value dateValue) {
-		if(dateValue == null
-				|| dateValue.hasNullValue()
-				|| !(dateValue.hasStringValue() || dateValue.hasNumberValue() || dateValue.hasStructValue())) {
-			return null;
-		}
-
-		if (dateValue.hasStructValue()) {
-			Map<String, Value> values = dateValue.getStructValue().getFieldsMap();
-			if(values == null) {
-				return null;
-			}
-			Value type = values.get(TYPE_KEY);
-			Value value = values.get(VALUE_KEY);
-			if(type == null || value == null) {
-				return null;
-			}
-			String validType = StringManager.getValidString(
-				type.getStringValue()
-			);
-			String validValue = StringManager.getValidString(
-				value.getStringValue()
-			);
-			if((!validType.equals(TYPE_DATE)
-					&& !validType.equals(TYPE_DATE_TIME))
-					|| validValue.length() == 0) {
-				return null;
-			}
-			return TimeManager.getTimestampFromString(
-				validValue
-			);
-		}
-		if (dateValue.hasStringValue()) {
-			return TimeManager.getTimestampFromString(
-				dateValue.getStringValue()
-			);
-		}
-		if (dateValue.hasNumberValue()) {
-			return TimeManager.getTimestampFromDouble(
-				dateValue.getNumberValue()
-			);
-		}
-		return null;
-	}
-
-
-	/**
-	 * Get value from a date
-	 * @param value
-	 * @return
-	 */
-	public static Value.Builder getValueFromTimestamp(Timestamp value) {
-		Struct.Builder date = Struct.newBuilder();
-		date.putFields(
-			TYPE_KEY,
-			Value.newBuilder().setStringValue(
-				TYPE_DATE
-			).build()
-		);
-
-		Value.Builder valueBuilder = Value.newBuilder();
-		if (value == null) {
-			valueBuilder = getValueFromNull();
-		} else {
-			String valueString = TimeManager.getTimestampToString(
-				value
-			);
-			valueBuilder.setStringValue(
-				valueString
-			);
-		}
-
-		date.putFields(
-			VALUE_KEY,
-			valueBuilder.build()
-		);
-		return Value.newBuilder().setStructValue(date);
-	}
-
-
-	/**
-	 * Get String from a value
-	 * @param value
-	 * @return
-	 */
 	public static String getStringFromValue(Value value) {
-		return getStringFromValue(value, false);
+		return TextManager.getStringFromProtoValue(value, false);
 	}
 	/**
-	 * Get String from a value
+	 * @deprecated Use {@link ValueManager#getStringFromProtoValue(Value, boolean)} instead.
 	 * @param value
 	 * @param uppercase
 	 * @return
 	 */
+	@Deprecated
 	public static String getStringFromValue(Value value, boolean uppercase) {
-		if (value == null) {
-			return null;
-		}
-		String stringValue = value.getStringValue();
-		if(Util.isEmpty(stringValue, true)) {
-			return null;
-		}
-		//	To Upper case
-		if(uppercase) {
-			stringValue = stringValue.toUpperCase();
-		}
-		return stringValue;
+		return TextManager.getStringFromProtoValue(value, uppercase);
 	}
 
 
+
 	/**
-	 * Get integer from a value
+	 * @deprecated Use {@link ValueManager#getProtoValueFromBoolean(boolean)} instead. With recursive support
 	 * @param value
-	 * @return
+	 * @return Value.Builder
 	 */
-	public static int getIntegerFromValue(Value value) {
-		if (value == null) {
-			return 0;
-		}
-		int intValue = (int) value.getNumberValue();
-		if (intValue == 0 && value.hasStringValue()) {
-			intValue = NumberManager.getIntFromString(
-				value.getStringValue()
-			);
-		}
-		return intValue;
+	public static Value.Builder getValueFromBoolean(boolean value) {
+		return BooleanManager.getProtoValueFromBoolean(value);
 	}
-	
 	/**
-	 * Get Boolean from a value
+	 * @deprecated Use {@link ValueManager#getProtoValueFromBoolean(Boolean)} instead. With recursive support
 	 * @param value
-	 * @return
+	 * @return Value.Builder
 	 */
+	public static Value.Builder getValueFromBoolean(Boolean value) {
+		return BooleanManager.getProtoValueFromBoolean(value);
+	}
+	/**
+	 * @deprecated Use {@link ValueManager#getProtoValueFromBoolean(String)} instead. With recursive support
+	 * @param value
+	 * @return Value.Builder
+	 */
+	@Deprecated
+	public static Value.Builder getValueFromStringBoolean(String value) {
+		return BooleanManager.getProtoValueFromBoolean(value);
+	}
+
+	/**
+	 * @deprecated Use {@link ValueManager#getBooleanFromProtoValue(String)} instead. With recursive support
+	 * @param value
+	 * @return Value.Builder
+	 */
+	@Deprecated
 	public static boolean getBooleanFromValue(Value value) {
-		if (value == null) {
-			return false;
-		}
-		if (!Util.isEmpty(value.getStringValue(), true)) {
-			return BooleanManager.getBooleanFromString(
-				value.getStringValue()
-			);
-		}
-
-		return value.getBoolValue();
+		return BooleanManager.getBooleanFromProtoValue(value);
 	}
 
+
+
+	/**
+	 * @deprecated Use {@link NumberManager#getProtoValueFromBigDecimal(String)} instead.
+	 * @param value
+	 * @return Value.Builder
+	 */
+	@Deprecated
+	public static Value.Builder getValueFromBigDecimal(BigDecimal value) {
+		return NumberManager.getProtoValueFromBigDecimal(value);
+	}
+	/**
+	 * @deprecated Use {@link NumberManager#getBigDecimalFromProtoValue(Value)} instead.
+	 * @param value
+	 * @return BigDecimal
+	 */
+	@Deprecated
+	public static BigDecimal getBigDecimalFromValue(Value decimalValue) {
+		return NumberManager.getBigDecimalFromProtoValue(decimalValue);
+	}
+
+
+
+	/**
+	 * @deprecated Use {@link TimeManager#getTimestampFromProtoValue(Value)} instead.
+	 * @param value
+	 * @return Timestamp
+	 */
+	@Deprecated
+	public static Timestamp getTimestampFromValue(Value dateValue) {
+		return TimeManager.getTimestampFromProtoValue(dateValue);
+	}
+
+	/**
+	 * @deprecated Use {@link TimeManager#getTimestampFromProtoValue(Value)} instead.
+	 * @param value
+	 * @return Value.Builder
+	 */
+	@Deprecated
+	public static Value.Builder getValueFromTimestamp(Timestamp value) {
+		return TimeManager.getProtoValueFromTimestamp(value);
+	}
+
+	/**
+	 * @deprecated Use {@link TimeManager#getProtoTimestampFromTimestamp(Timestamp)} instead.
+	 * @param value
+	 * @return com.google.protobuf.Timestamp
+	 */
+	@Deprecated
+	public static com.google.protobuf.Timestamp convertDateToValue(Timestamp value) {
+		return TimeManager.getProtoTimestampFromTimestamp(value);
+	}
+	/**
+	 * Get google.protobuf.Timestamp from Timestamp
+	 * @param dateValue
+	 * @return com.google.protobuf.Timestamp
+	 */
+	public static com.google.protobuf.Timestamp getProtoTimestampFromTimestamp(Timestamp dateValue) {
+		return TimeManager.getProtoTimestampFromTimestamp(dateValue);
+	}
+	/**
+	 * @deprecated Use {@link TimeManager#getTimestampFromProtoValue(Value)} instead.
+	 * @param value
+	 * @return Timestamp
+	 */
+	@Deprecated
+	public static Timestamp getTimestampFromProtoTimestamp(com.google.protobuf.Timestamp dateValue) {
+		return TimeManager.getTimestampFromProtoTimestamp(dateValue);
+	}
+	/**
+	 * Get google.protobuf.Timestamp from Timestamp
+	 * @deprecated Use {@link TimeManager#getProtoTimestampFromTimestamp(Timestamp)} instead.
+	 * @param dateValue
+	 * @return com.google.protobuf.Timestamp
+	 */
+	@Deprecated
+	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp dateValue) {
+		return TimeManager.getProtoTimestampFromTimestamp(dateValue);
+	}
+
+
+	/**
+	 * @deprecated Use {@link ValueManager#getProtoValueFromObject(Object, int)} instead.
+	 * @param value
+	 * @param displayTypeId reference of value
+	 * @return Value.Builder
+	 */
+	@Deprecated
+	public static Value.Builder getValueFromReference(Object value, int displayTypeId) {
+		return ValueManager.getProtoValueFromObject(value, displayTypeId);
+	}
 	/**
 	 * Get Value from reference
 	 * @param value
-	 * @param referenceId reference of value
+	 * @param displayTypeId reference of value
 	 * @return
 	 */
-	public static Value.Builder getValueFromReference(Object value, int referenceId) {
+	public static Value.Builder getProtoValueFromObject(Object value, int displayTypeId) {
 		Value.Builder builderValue = Value.newBuilder();
 		if(value == null) {
-			// getEmptyValueByReference(referenceId);
-			return getValueFromNull();
+			// getEmptyValueByReference(displayTypeId);
+			return getProtoValueFromNull();
 		}
-		if (referenceId <= 0) {
+		if (displayTypeId <= 0) {
 			return getProtoValueFromObject(value);
 		}
 		//	Validate values
-		if (DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
+		if (DisplayType.isID(displayTypeId) || DisplayType.Integer == displayTypeId) {
 			Integer integerValue = NumberManager.getIntegerFromObject(
 				value
 			);
-			if (integerValue == null && (DisplayType.Search == referenceId || DisplayType.Table == referenceId)) {
+			if (integerValue == null && (DisplayType.Search == displayTypeId || DisplayType.Table == displayTypeId)) {
 				// no casteable for integer, as `AD_Language`, `EntityType`
 				return getProtoValueFromObject(value);
 			}
-			return getValueFromInteger(integerValue);
-		} else if(DisplayType.isNumeric(referenceId)) {
+			return NumberManager.getProtoValueFromInteger(integerValue);
+		} else if(DisplayType.isNumeric(displayTypeId)) {
 			BigDecimal bigDecimalValue = NumberManager.getBigDecimalFromObject(
 				value
 			);
-			return getValueFromBigDecimal(bigDecimalValue);
-		} else if(DisplayType.YesNo == referenceId) {
+			return NumberManager.getProtoValueFromBigDecimal(bigDecimalValue);
+		} else if(DisplayType.YesNo == displayTypeId) {
 			if (value instanceof String) {
-				String stringValue = StringManager.getStringFromObject(
+				String stringValue = TextManager.getStringFromObject(
 					value
 				);
-				return getValueFromStringBoolean(stringValue);
+				return BooleanManager.getProtoValueFromBoolean(stringValue);
 			}
-			return getValueFromBoolean((Boolean) value);
-		} else if(DisplayType.isDate(referenceId)) {
+			return BooleanManager.getProtoValueFromBoolean((Boolean) value);
+		} else if(DisplayType.isDate(displayTypeId)) {
 			Timestamp dateValue = TimeManager.getTimestampFromObject(
 				value
 			);
-			return getValueFromTimestamp(dateValue);
-		} else if(DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
-			String stringValue = StringManager.getStringFromObject(
+			return TimeManager.getProtoValueFromTimestamp(dateValue);
+		} else if(DisplayType.isText(displayTypeId) || DisplayType.List == displayTypeId) {
+			String stringValue = TextManager.getStringFromObject(
 				value
 			);
-			return getValueFromString(
+			return TextManager.getProtoValueFromString(
 				stringValue
 			);
-		} else if (DisplayType.Button == referenceId) {
+		} else if (DisplayType.Button == displayTypeId) {
 			if (value instanceof Integer) {
-				return getValueFromInteger((Integer) value);
+				return NumberManager.getProtoValueFromInteger((Integer) value);
 			} else if (value instanceof Long) {
 				Integer integerValue = NumberManager.getIntegerFromLong(
 					(Long) value
 				);
-				return getValueFromInt(integerValue);
+				return NumberManager.getProtoValueFromInt(integerValue);
 			} else if(value instanceof BigDecimal) {
 				Integer bigDecimalValue = NumberManager.getIntegerFromBigDecimal(
 					(BigDecimal) value
 				);
-				return getValueFromInteger(bigDecimalValue);
+				return NumberManager.getProtoValueFromInteger(bigDecimalValue);
 			} else if (value instanceof String) {
-				String stringValue = StringManager.getStringFromObject(
+				String stringValue = TextManager.getStringFromObject(
 					value
 				);
-				return getValueFromString(
+				return TextManager.getProtoValueFromString(
 					stringValue
 				);
 			}
@@ -733,9 +592,10 @@ public class ValueManager {
 		if (DisplayType.isText(displayTypeId)) {
 			;
 		} else if (displayTypeId == DisplayType.YesNo) {
+			String language = Env.getAD_Language(context);
 			displayedValue = BooleanManager.getBooleanToTranslated(
 				value.toString(),
-				Env.getAD_Language(context)
+				language
 			);
 		} else if (displayTypeId == DisplayType.Integer) {
 			// necessary condition do not to enter the condition for decimal struct
@@ -777,11 +637,12 @@ public class ValueManager {
 				// displayTypeId,
 				language
 			);
-			displayedValue = dateTimeFormat.format(
-				Timestamp.valueOf(
-					value.toString()
-				)
-			);
+			Timestamp dateValue = TimeManager.getTimestampFromObject(value);
+			if (dateValue != null) {
+				displayedValue = dateTimeFormat.format(
+					dateValue
+				);
+			}
 		} else if (DisplayType.isLookup(displayTypeId) && displayTypeId != DisplayType.Button && displayTypeId != DisplayType.List) {
 			Language language = Env.getLanguage(context);
 			MLookupInfo lookupInfo = MLookupFactory.getLookupInfo(
@@ -795,7 +656,7 @@ public class ValueManager {
 			if (pp != null) {
 				displayedValue = pp.getName();
 			}
-		} else if((DisplayType.Button == displayTypeId || DisplayType.List == displayTypeId) && referenceValueId != 0) {
+		} else if((DisplayType.Button == displayTypeId || DisplayType.List == displayTypeId) && referenceValueId > 0) {
 			Language language = Env.getLanguage(context);
 			MLookupInfo lookupInfo = MLookupFactory.getLookup_List(
 				language,
@@ -815,317 +676,42 @@ public class ValueManager {
 		return displayedValue;
 	}
 
-	/**
-	 * JSON as string to Map(String, Object)
-	 * Ej: `{"AD_Field_ID":123,"AD_Column_ID":345}`
-	 * @param jsonValues
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static Map<String, Object> convertJsonStringToMap(String jsonValues) {
-		Map<String, Object> fillValues = new HashMap<String, Object>();
-		if (Util.isEmpty(jsonValues, true)) {
-			return fillValues;
-		}
-		ObjectMapper fileMapper = new ObjectMapper(
-			new JsonFactory()
-		);
-		if (jsonValues.trim().startsWith("{")) {
-			try {
-				/*
-					{
-						"C_BPartner_ID": 1234,
-						"C_Invoice": 333
-					}
-				*/
-				fillValues = fileMapper.readValue(
-					jsonValues,
-					HashMap.class
-				);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		else if (jsonValues.trim().startsWith("[")) {
-			try {
-				/*
-					[
-						{"columnName: "C_BPartner_ID", "value": 1234 },
-						{"columnName": "C_Invoice", , "value": 333 }
-					]
-				*/
-				TypeReference<List<HashMap<String, Object>>> valueType = new TypeReference<List<HashMap<String, Object>>>() {};
 
-				List<HashMap<String, Object>> valuesAsList = fileMapper.readValue(jsonValues, valueType);
-				for (HashMap<String,Object> hashMap : valuesAsList) {
-					String key = StringManager.getStringFromObject(
-						hashMap.get("columnName")
-					);
-					Object value = hashMap.get("value");
-					fillValues.put(
-						key,
-						value
-					);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		return fillValues;
+
+	/**
+	 * @deprecated Use {@link CollectionManager#getMapFromJsomString(String)} instead.
+	 * @param jsonValues
+	 * @return Map<String, Object>
+	 */
+	@Deprecated
+	public static Map<String, Object> convertJsonStringToMap(String jsonValues) {
+		return CollectionManager.getMapFromJsomString(jsonValues);
 	}
 
+
+
 	/**
-	 * Convert Selection values from gRPC to ADempiere values
+	 * @deprecated Use {@link CollectionManager#getMapObjectFromMapProtoValue(Map<String, Value>)} instead.
 	 * @param values
 	 * @return
 	 */
+	@Deprecated
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values) {
-		Map<String, Object> convertedValues = new HashMap<String, Object>();
-		if (values == null || values.size() <= 0) {
-			return convertedValues;
-		}
-		values.keySet().forEach(keyValue -> {
-			Value valueBuilder = values.get(keyValue);
-			Object valueItem = ValueManager.getObjectFromValue(valueBuilder);
-			convertedValues.put(
-				keyValue,
-				valueItem
-			);
-		});
-		//	
-		return convertedValues;
+		return CollectionManager.getMapObjectFromMapProtoValue(values);
 	}
 
 	/**
-	 * Convert Selection values from gRPC to ADempiere values
+	 * @deprecated Use {@link CollectionManager#getMapObjectFromMapProtoValue(Map<String, Value>, Map<String, Integer>)} instead.
 	 * @param values
 	 * @param displayTypeColumns Map(ColumnName, DisplayType)
 	 * @return
 	 */
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values, Map<String, Integer> displayTypeColumns) {
-		Map<String, Object> convertedValues = new HashMap<String, Object>();
-		if (values == null || values.size() <= 0) {
-			return convertedValues;
-		}
-		if (displayTypeColumns == null || values.size() <= 0) {
-			return ValueManager.convertValuesMapToObjects(
-				values
-			);
-		}
-		values.keySet().forEach(keyValue -> {
-			Value valueBuilder = values.get(keyValue);
-			Object valueItem = getObjectFromValue(valueBuilder);
-
-			Integer displayType = displayTypeColumns.get(keyValue);
-			if (displayType != null && displayType.intValue() > 0) {
-				valueItem = ValueManager.getObjectFromReference(
-					valueBuilder,
-					displayType.intValue()
-				);
-			}
-
-			convertedValues.put(
-				keyValue,
-				valueItem
-			);
-		});
-		//	
-		return convertedValues;
-	}
-
-	/**
-	 * Convert Selection values from gRPC to ADempiere values
-	 * @deprecated Use {@link ValueManager#getProtoValueFromObject(Object)} instead. With recursive support
-	 * @param values
-	 * @return
-	 */
-	@Deprecated
-	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
-		return getProtoValueFromMap(values);
-	}
-
-	/**
-	 * Default get value from type
-	 * @param valueToConvert
-	 * @return
-	 */
-	public static Object getObjectFromValue(Value valueToConvert) {
-		return getObjectFromValue(valueToConvert, false);
-	}
-	
-	/**
-	 * Get value from parameter type
-	 * @param value
-	 * @return
-	 */
-	public static Object getObjectFromValue(Value value, boolean uppercase) {
-		if(value == null || value.hasNullValue()) {
-			return null;
-		}
-		if(value.hasStringValue()) {
-			return getStringFromValue(value, uppercase);
-		}
-		if(value.hasNumberValue()) {
-			return (int) value.getNumberValue();
-		}
-		if(value.hasBoolValue()) {
-			return value.getBoolValue();
-		}
-		if(value.hasStructValue()) {
-			if(isDecimalValue(value)) {
-				return getBigDecimalFromValue(value);
-			} else if(isDateValue(value)) {
-				return getTimestampFromValue(value);
-			}
-			return getMapFromProtoValue(value);
-		}
-		if(value.hasListValue()) {
-			return getListFromProtoValue(
-				value
-			);
-		}
-		return null;
-	}
-
-	public static Map<String, Object> getMapFromProtoValueStruct(Struct values) {
-		Map<String, Object> valuesMap = new HashMap<String, Object>();
-		if (values == null) {
-			return valuesMap;
-		}
-		values.getFieldsMap().forEach((keyItem, protoValueItem) -> {
-			Object valueItem = getObjectFromValue(protoValueItem);
-			valuesMap.put(
-				keyItem,
-				valueItem
-			);
-		});
-
-		return valuesMap;
-	}
-	public static Map<String, Object> getMapFromProtoValue(Value protoValue) {
-		Map<String, Object> valuesMap = new HashMap<String, Object>();
-		if (protoValue == null) {
-			return valuesMap;
-		}
-
-		valuesMap = getMapFromProtoValueStruct(
-			protoValue.getStructValue()
-		);
-		return valuesMap;
+		return CollectionManager.getMapObjectFromMapProtoValue(values, displayTypeColumns);
 	}
 
 
-	public static List<?> getListFromProtoValuesList(ListValue values) {
-		ArrayList<Object> valuesList = new ArrayList<Object>();
-		if (values == null) {
-			return valuesList;
-		}
-		values.getValuesList().forEach(protoValueItem -> {
-			Object valueItem = ValueManager.getObjectFromValue(protoValueItem);
-			valuesList.add(valueItem);
-		});
-		;
-		return valuesList;
-	}
-	public static List<?> getListFromProtoValue(Value value) {
-		List<?> valuesList = new ArrayList<Object>();
-		if (value == null) {
-			return valuesList;
-		}
-		valuesList = getListFromProtoValuesList(
-			value.getListValue()
-		);
-		return valuesList;
-	}
 
-	/**
-	 * Validate if a value is date
-	 * @param value
-	 * @return
-	 */
-	public static boolean isDateValue(Value value) {
-		if (value == null) {
-			return false;
-		}
-		Map<String, Value> values = value.getStructValue().getFieldsMap();
-		if(values == null) {
-			return false;
-		}
-		Value type = values.get(TYPE_KEY);
-		if(type == null) {
-			return false;
-		}
-		String validType = StringManager.getValidString(
-			type.getStringValue()
-		);
-		return validType.equals(TYPE_DATE) || validType.equals(TYPE_DATE_TIME);
-	}
-	
-	/**
-	 * Validate if is a decimal value
-	 * @param value
-	 * @return
-	 */
-	public static boolean isDecimalValue(Value value) {
-		if (value == null) {
-			return false;
-		}
-		Map<String, Value> values = value.getStructValue().getFieldsMap();
-		if(values == null) {
-			return false;
-		}
-		Value type = values.get(TYPE_KEY);
-		if(type == null) {
-			return false;
-		}
-		String validType = StringManager.getValidString(
-			type.getStringValue()
-		);
-		return validType.equals(TYPE_DECIMAL);
-	}
-	
-	/**
-	 * Get Object from value based on reference
-	 * @param value
-	 * @param referenceId
-	 * @return
-	 */
-	public static Object getObjectFromReference(Value value, int referenceId) {
-		if(value == null) {
-			return null;
-		}
-		if (referenceId <= 0) {
-			return getObjectFromValue(value);
-		}
-		//	Validate values
-		if(DisplayType.isID(referenceId) || DisplayType.Integer == referenceId) {
-			if (DisplayType.Search == referenceId || DisplayType.Table == referenceId) {
-				Object lookupValue = getObjectFromValue(value);
-				try {
-					// casteable for integer, except `AD_Language`, `EntityType`
-					lookupValue = Integer.valueOf(
-						lookupValue.toString()
-					);
-				} catch (Exception e) {
-				}
-				return lookupValue;
-			}
-			return getIntegerFromValue(value);
-		} else if(DisplayType.isNumeric(referenceId)) {
-			return getBigDecimalFromValue(value);
-		} else if(DisplayType.YesNo == referenceId) {
-			return getBooleanFromValue(value);
-		} else if(DisplayType.isDate(referenceId)) {
-			return getTimestampFromValue(value);
-		} else if(DisplayType.isText(referenceId) || DisplayType.List == referenceId) {
-			return getStringFromValue(value);
-		} else if (DisplayType.Button == referenceId) {
-			return getObjectFromValue(value);
-		}
-		//	
-		return getObjectFromValue(value);
-	}
-	
 	/**
 	 * Is lookup include location
 	 * @param displayType
@@ -1138,55 +724,6 @@ public class ValueManager {
 			|| DisplayType.Locator == displayType
 			|| DisplayType.PAttribute == displayType
 		;
-	}
-
-	/**
-	 * Convert null on ""
-	 * @deprecated Use {@link StringManager#getValidString(String)} instead.
-	 * @param value
-	 * @return
-	 */
-	@Deprecated
-	public static String validateNull(String value) {
-		return StringManager.getValidString(
-			value
-		);
-	}
-
-
-	/**
-	 * Get Decode URL value
-	 * @deprecated Use {@link StringManager#getDecodeUrl(String)} instead.
-	 * @param value
-	 * @return
-	 */
-	@Deprecated
-	public static String getDecodeUrl(String value) {
-		return StringManager.getDecodeUrl(value);
-	}
-	/**
-	 * Get Decode URL value
-	 * @deprecated Use {@link StringManager#getDecodeUrl(String, Charset)} instead.
-	 * @param value
-	 * @param charsetType
-	 * @return
-	 */
-	@Deprecated
-	public static String getDecodeUrl(String value, Charset charsetType) {
-		return StringManager.getDecodeUrl(value, charsetType);
-	}
-
-
-	/**
-	 * Get translation if is necessary
-	 * @deprecated Use {@link RecordUtil#getTranslation(PO, String)} instead.
-	 * @param object
-	 * @param columnName
-	 * @return
-	 */
-	@Deprecated
-	public static String getTranslation(PO object, String columnName) {
-		return RecordUtil.getTranslation(object, columnName);
 	}
 
 }

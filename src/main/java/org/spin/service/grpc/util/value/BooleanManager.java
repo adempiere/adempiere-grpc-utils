@@ -19,6 +19,8 @@ import org.compiere.util.Env;
 import org.compiere.util.Msg;
 import org.compiere.util.Util;
 
+import com.google.protobuf.Value;
+
 /**
  * Class for handle Boolean values
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
@@ -62,18 +64,22 @@ public class BooleanManager {
 
 
 	public static boolean getBooleanFromObject(Object value) {
-		boolean dateValue = false;
+		boolean booleanValue = false;
 		if (value == null) {
-			return dateValue;
+			return booleanValue;
 		}
 		if (value instanceof Boolean) {
-			dateValue = (boolean) value;
+			booleanValue = (boolean) value;
 		} else if (value instanceof String) {
-			dateValue = BooleanManager.getBooleanFromString(
+			booleanValue = BooleanManager.getBooleanFromString(
 				(String) value
 			);
+		} else if (value instanceof Integer) {
+			booleanValue = BooleanManager.getBooleanFromInteger(
+				(Integer) value
+			);
 		}
-		return dateValue;
+		return booleanValue;
 	}
 
 
@@ -85,6 +91,20 @@ public class BooleanManager {
 			return true;
 		}
 		return false;
+	}
+
+
+	public static boolean getBooleanFromInteger(Integer integerValue) {
+		if (integerValue == null) {
+			return false;
+		}
+		return getBooleanFromInt(integerValue);
+	}
+	public static boolean getBooleanFromInt(int integerValue) {
+		if (integerValue == 0 || integerValue == -1) {
+			return false;
+		}
+		return true;
 	}
 
 
@@ -133,6 +153,59 @@ public class BooleanManager {
 			language,
 			acceptedValue
 		);
+	}
+
+
+
+	/**
+	 * Get value from a boolean value
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromBoolean(boolean value) {
+		return Value.newBuilder().setBoolValue(value);
+	}
+	/**
+	 * Get value from a Boolean value
+	 * @param value
+	 * @return
+	 */
+	public static Value.Builder getProtoValueFromBoolean(Boolean value) {
+		if(value == null) {
+			// TODO: Validate to false value
+			return ValueManager.getProtoValueFromNull();
+		}
+		return BooleanManager.getProtoValueFromBoolean(
+			value.booleanValue()
+		);
+	}
+	/**
+	 * Get value from a String Boolean value ("Y" / "N")
+	 * @param value
+	 * @return Value.Builder
+	 */
+	public static Value.Builder getProtoValueFromBoolean(String value) {
+		return BooleanManager.getProtoValueFromBoolean(
+			BooleanManager.getBooleanFromString(value)
+		);
+	}
+
+	/**
+	 * Get Boolean from a Proto Value
+	 * @param value
+	 * @return
+	 */
+	public static boolean getBooleanFromProtoValue(Value value) {
+		if (value == null) {
+			return false;
+		}
+		if (!Util.isEmpty(value.getStringValue(), true)) {
+			return BooleanManager.getBooleanFromString(
+				value.getStringValue()
+			);
+		}
+
+		return value.getBoolValue();
 	}
 
 }
