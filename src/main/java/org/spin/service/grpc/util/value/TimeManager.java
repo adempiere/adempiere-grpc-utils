@@ -107,17 +107,25 @@ public class TimeManager {
 				(Integer) value
 			);
 		} else if (value instanceof String) {
-			String stringValue = (String) value;
-			Integer integerValue = NumberManager.getIntegerFromString(stringValue);
-			BigDecimal bigDecimalValue = NumberManager.getBigDecimalFromString(stringValue);
+			final String stringValue = (String) value;
+			final Integer integerValue = NumberManager.getIntegerFromString(stringValue);
+			final BigDecimal bigDecimalValue = NumberManager.getBigDecimalFromString(stringValue);
 			if (integerValue != null) {
 				dateValue = TimeManager.getTimestampFromInteger(integerValue);
 			} else if (bigDecimalValue != null) {
-				dateValue = TimeManager.getTimestampFromLong(
-					bigDecimalValue
-						.setScale(0, RoundingMode.HALF_UP)
-						.longValueExact()
-				);
+				// final int decimalPointIndex = value.toString().indexOf(".");
+				// if (decimalPointIndex > 0) {
+				// 	value = value.toString().substring(0, decimalPointIndex);
+				// }
+				// long longValue = new BigDecimal(
+				// 	value.toString()
+				// ).longValue();
+				final long longValue = bigDecimalValue
+					.setScale(0, RoundingMode.HALF_UP)
+					.longValueExact()
+				;
+
+				dateValue = TimeManager.getTimestampFromLong(longValue);
 			} else {
 				dateValue = TimeManager.getTimestampFromString(
 					stringValue
@@ -125,11 +133,11 @@ public class TimeManager {
 			}
 		} else if (value instanceof BigDecimal) {
 			BigDecimal bigDecimalValue = (BigDecimal) value;
-			dateValue = TimeManager.getTimestampFromLong(
-				bigDecimalValue
-					.setScale(0, RoundingMode.HALF_UP)
-					.longValueExact()
-			);
+			final long longValue = bigDecimalValue
+				.setScale(0, RoundingMode.HALF_UP)
+				.longValueExact()
+			;
+			dateValue = TimeManager.getTimestampFromLong(longValue);
 		} else if (value instanceof Timestamp) {
 			dateValue = (Timestamp) value;
 		}
