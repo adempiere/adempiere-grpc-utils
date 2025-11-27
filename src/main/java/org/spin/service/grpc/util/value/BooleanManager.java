@@ -27,6 +27,20 @@ import com.google.protobuf.Value;
  */
 public class BooleanManager {
 
+
+	/**
+	 * Validate if is boolean
+	 * @param value
+	 * @return
+	 */
+	public static boolean isBoolean(Object value) {
+		if (value == null) {
+			return false;
+		}
+		return isBoolean(
+			value.toString()
+		);
+	}
 	/**
 	 * Validate if is boolean
 	 * @param value

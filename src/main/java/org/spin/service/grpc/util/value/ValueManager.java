@@ -162,6 +162,7 @@ public class ValueManager {
 	 * @param value
 	 * @return Object
 	 */
+	@Deprecated
 	public static Object getObjectFromReference(Value value, int referenceId) {
 		return getObjectFromProtoValue(value, referenceId);
 	}
@@ -362,6 +363,7 @@ public class ValueManager {
 	 * @param value
 	 * @return Value.Builder
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromBoolean(boolean value) {
 		return BooleanManager.getProtoValueFromBoolean(value);
 	}
@@ -370,6 +372,7 @@ public class ValueManager {
 	 * @param value
 	 * @return Value.Builder
 	 */
+	@Deprecated
 	public static Value.Builder getValueFromBoolean(Boolean value) {
 		return BooleanManager.getProtoValueFromBoolean(value);
 	}
@@ -447,9 +450,11 @@ public class ValueManager {
 	}
 	/**
 	 * Get google.protobuf.Timestamp from Timestamp
+	 * @deprecated Use {@link TimeManager#getProtoTimestampFromTimestamp(Value)} instead.
 	 * @param dateValue
 	 * @return com.google.protobuf.Timestamp
 	 */
+	@Deprecated
 	public static com.google.protobuf.Timestamp getProtoTimestampFromTimestamp(Timestamp dateValue) {
 		return TimeManager.getProtoTimestampFromTimestamp(dateValue);
 	}
@@ -609,14 +614,9 @@ public class ValueManager {
 			);
 		} else if (DisplayType.isNumeric(displayTypeId)) {
 			if (I_C_Order.COLUMNNAME_ProcessedOn.equals(columnName)) {
-				if (value.toString().indexOf(".") > 0) {
-					value = value.toString().substring(0, value.toString().indexOf("."));
-				}
-				long longValue = new BigDecimal(
-					value.toString()
-				).longValue();
+				Timestamp timeValue = TimeManager.getTimestampFromObject(value);
 				displayedValue = TimeUtil.formatElapsed(
-					System.currentTimeMillis() - longValue
+					timeValue
 				);
 			} else {
 				Language language = Env.getLanguage(context);
@@ -643,7 +643,7 @@ public class ValueManager {
 					dateValue
 				);
 			}
-		} else if (DisplayType.isLookup(displayTypeId) && displayTypeId != DisplayType.Button && displayTypeId != DisplayType.List) {
+		} else if (DisplayType.isLookup(displayTypeId) && displayTypeId != DisplayType.List) {
 			Language language = Env.getLanguage(context);
 			MLookupInfo lookupInfo = MLookupFactory.getLookupInfo(
 				context, 0,
@@ -656,19 +656,27 @@ public class ValueManager {
 			if (pp != null) {
 				displayedValue = pp.getName();
 			}
-		} else if((DisplayType.Button == displayTypeId || DisplayType.List == displayTypeId) && referenceValueId > 0) {
-			Language language = Env.getLanguage(context);
-			MLookupInfo lookupInfo = MLookupFactory.getLookup_List(
-				language,
-				referenceValueId
-			);
-			MLookup lookup = new MLookup(lookupInfo, 0);
-			if (value != null) {
-				Object key = value;
-				NamePair pp = lookup.get(key);
-				if (pp != null) {
-					displayedValue = pp.getName();
+		} else if(displayTypeId == DisplayType.Button || displayTypeId == DisplayType.List) {
+			if (referenceValueId > 0) {
+				Language language = Env.getLanguage(context);
+				MLookupInfo lookupInfo = MLookupFactory.getLookup_List(
+					language,
+					referenceValueId
+				);
+				MLookup lookup = new MLookup(lookupInfo, 0);
+				if (value != null) {
+					Object key = value;
+					NamePair pp = lookup.get(key);
+					if (pp != null) {
+						displayedValue = pp.getName();
+					}
 				}
+			} else if (BooleanManager.isBoolean(value)) {
+				String language = Env.getAD_Language(context);
+				displayedValue = BooleanManager.getBooleanToTranslated(
+					value.toString(),
+					language
+				);
 			}
 		} else if (DisplayType.isLOB(displayTypeId)) {
 			;
@@ -706,6 +714,7 @@ public class ValueManager {
 	 * @param displayTypeColumns Map(ColumnName, DisplayType)
 	 * @return
 	 */
+	@Deprecated
 	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values, Map<String, Integer> displayTypeColumns) {
 		return CollectionManager.getMapObjectFromMapProtoValue(values, displayTypeColumns);
 	}
