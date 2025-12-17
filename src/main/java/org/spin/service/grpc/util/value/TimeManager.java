@@ -43,8 +43,8 @@ import com.google.protobuf.Value;
 public class TimeManager {
 
 	/**	Date format	*/
-	private static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private static final String DATE_FORMAT = "yyyy-MM-dd";
+	private static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private static final String TIMEZONE_FORMAT = "yyyy-MM-ddTHH:mm:ss.000Z";
 
 
