@@ -20,12 +20,14 @@ import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
@@ -42,8 +44,9 @@ import com.google.protobuf.Value;
 public class TimeManager {
 
 	/**	Date format	*/
-	private static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private static final String DATE_FORMAT = "yyyy-MM-dd";
+	private static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static final String TIMEZONE_FORMAT = "yyyy-MM-ddTHH:mm:ss.000Z";
 
 
 	public static SimpleDateFormat FORMAT = DisplayType.getDateFormat(
@@ -154,14 +157,22 @@ public class TimeManager {
 		if (Util.isEmpty(stringValue, true)) {
 			return null;
 		}
+
 		String format = DATE_FORMAT;
 		if(stringValue.length() == TIME_FORMAT.length()) {
 			format = TIME_FORMAT;
-		} else if(stringValue.length() != DATE_FORMAT.length()) {
+		} else if (stringValue.length() == TIMEZONE_FORMAT.length()){
+			try{
+				return getTimestampFromInstant(stringValue);
+			} catch (Exception e) {
+				//
+			}
+		} else if(stringValue.length() != DATE_FORMAT.length() && stringValue.length() != TIMEZONE_FORMAT.length() && stringValue.length() != TIMEZONE_FORMAT.length()) {
 			// throw new AdempiereException(
-			// 	"Invalid date format, please use some like this: \"" + DATE_FORMAT + "\" or \"" + TIME_FORMAT + "\""
+			// 	"Invalid date format, please use some like this: \"" + DATE_FORMAT + "\" or \"" + TIME_FORMAT + "\"" or \"" + TIMEZONE_FORMAT + "\""
 			// );
 		}
+
 		Date validDate = null;
 		try {
 			SimpleDateFormat dateConverter = new SimpleDateFormat(format);
@@ -204,7 +215,10 @@ public class TimeManager {
 		if (Util.isEmpty(pattern, true)) {
 			pattern = TIME_FORMAT;
 		}
-		return new SimpleDateFormat(pattern).format(date);
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+		String timeString = simpleDateFormat.format(date);
+		return timeString;
 	}
 
 	/**
@@ -226,6 +240,20 @@ public class TimeManager {
 			return new Timestamp(value);
 		}
 		return null;
+	}
+
+	public static Timestamp getTimestampFromInstant(Instant value) {
+		if (value == null) {
+			return null;
+		}
+		return new Timestamp(value.toEpochMilli());
+	}
+	public static Timestamp getTimestampFromInstant(String value) {
+		Instant instant = getInstantFromString(value);
+		if (instant == null) {
+			return null;
+		}
+		return getTimestampFromInstant(instant);
 	}
 
 	public static Timestamp getTimestampFromDouble(double value) {
@@ -257,6 +285,14 @@ public class TimeManager {
 		return value.getTime();
 	}
 
+
+
+	public static Instant getInstantFromString(String value) {
+		if (!Util.isEmpty(value, true)) {
+			return Instant.parse(value);
+		}
+		return null;
+	}
 
 
 	/**
