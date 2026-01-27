@@ -38,7 +38,7 @@ import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
 /**
- * Class for handle Time (TimesTamp, Date, Long) values
+ * Class for handle Time (TimesTamp, Date, Long, Instant) values
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt
  */
 public class TimeManager {
@@ -101,13 +101,35 @@ public class TimeManager {
 		if (value == null) {
 			return dateValue;
 		}
-		if (value instanceof Long) {
+		if (value instanceof Timestamp) {
+			dateValue = (Timestamp) value;
+		} else if (value instanceof Date) {
+			dateValue = getTimestampFromDate(
+				(Date) value
+			);
+		} else if (value instanceof Long) {
 			dateValue = TimeManager.getTimestampFromLong(
 				(Long) value
 			);
-		} else if (value instanceof Integer) {
+		} else if (value instanceof Instant) {
+			dateValue = TimeManager.getTimestampFromInstant(
+				(Instant) value
+			);
+		} else if (value instanceof LocalDateTime) {
+			dateValue = TimeManager.getTimestampFromLocalDateTime(
+				(LocalDateTime) value
+			);
+		}else if (value instanceof Integer) {
 			dateValue = TimeManager.getTimestampFromInteger(
 				(Integer) value
+			);
+		} else if (value instanceof Double) {
+			dateValue = TimeManager.getTimestampFromDouble(
+				(Double) value
+			);
+		} else if (value instanceof Float) {
+			dateValue = TimeManager.getTimestampFromFloat(
+				(Float) value
 			);
 		} else if (value instanceof String) {
 			final String stringValue = (String) value;
@@ -116,33 +138,20 @@ public class TimeManager {
 			if (integerValue != null) {
 				dateValue = TimeManager.getTimestampFromInteger(integerValue);
 			} else if (bigDecimalValue != null) {
-				// final int decimalPointIndex = value.toString().indexOf(".");
-				// if (decimalPointIndex > 0) {
-				// 	value = value.toString().substring(0, decimalPointIndex);
-				// }
-				// long longValue = new BigDecimal(
-				// 	value.toString()
-				// ).longValue();
-				final long longValue = bigDecimalValue
-					.setScale(0, RoundingMode.HALF_UP)
-					.longValueExact()
-				;
-
-				dateValue = TimeManager.getTimestampFromLong(longValue);
+				dateValue = TimeManager.getTimestampFromBigDecimal(bigDecimalValue);
 			} else {
 				dateValue = TimeManager.getTimestampFromString(
 					stringValue
 				);
 			}
 		} else if (value instanceof BigDecimal) {
-			BigDecimal bigDecimalValue = (BigDecimal) value;
-			final long longValue = bigDecimalValue
-				.setScale(0, RoundingMode.HALF_UP)
-				.longValueExact()
-			;
-			dateValue = TimeManager.getTimestampFromLong(longValue);
-		} else if (value instanceof Timestamp) {
-			dateValue = (Timestamp) value;
+			dateValue = TimeManager.getTimestampFromBigDecimal(
+				(BigDecimal) value
+			);
+		} else if (value instanceof Number) {
+			dateValue = TimeManager.getTimestampFromNumber(
+				(Number) value
+			);
 		}
 		return dateValue;
 	}
@@ -201,7 +210,6 @@ public class TimeManager {
 		}
 		return getTimestampToString(date, TIME_FORMAT);
 	}
-
 	/**
 	 * Convert Timestamp to String
 	 * @param date
@@ -242,6 +250,13 @@ public class TimeManager {
 		return null;
 	}
 
+	public static Timestamp getTimestampFromLocalDateTime(LocalDateTime value) {
+		if (value == null) {
+			return null;
+		}
+		return Timestamp.valueOf(value);
+	}
+
 	public static Timestamp getTimestampFromInstant(Instant value) {
 		if (value == null) {
 			return null;
@@ -256,6 +271,35 @@ public class TimeManager {
 		return getTimestampFromInstant(instant);
 	}
 
+	public static Timestamp getTimestampFromNumber(Number value) {
+		Timestamp dateValue = null;
+		if (value == null) {
+			return dateValue;
+		}
+		if (value instanceof Long) {
+			dateValue = TimeManager.getTimestampFromLong(
+				(Long) value
+			);
+		} else if (value instanceof Integer) {
+			return getTimestampFromInteger(
+				(Integer) value
+			);
+		} else if (value instanceof Double) {
+			dateValue = TimeManager.getTimestampFromDouble(
+				(Double) value
+			);
+		} else if (value instanceof Float) {
+			return getTimestampFromFloat(
+				(Float) value
+			);
+		} else if (value instanceof BigDecimal) {
+			dateValue = TimeManager.getTimestampFromBigDecimal(
+				(BigDecimal) value
+			);
+		}
+		return dateValue;
+	}
+
 	public static Timestamp getTimestampFromDouble(double value) {
 		if (value > 0.0) {
 			return new Timestamp(
@@ -263,6 +307,33 @@ public class TimeManager {
 			);
 		}
 		return null;
+	}
+
+	public static Timestamp getTimestampFromFloat(Float value) {
+		if (value == null || value < 0.0f) {
+			return null;
+		}
+		return new Timestamp(
+			value.longValue()
+		);
+	}
+
+	public static Timestamp getTimestampFromBigDecimal(BigDecimal value) {
+		if (value == null || value.compareTo(BigDecimal.ZERO) < 0) {
+			return null;
+		}
+		// final int decimalPointIndex = value.toString().indexOf(".");
+		// if (decimalPointIndex > 0) {
+		// 	value = value.toString().substring(0, decimalPointIndex);
+		// }
+		// long longValue = new BigDecimal(
+		// 	value.toString()
+		// ).longValue();
+		final long longValue = value
+			.setScale(0, RoundingMode.HALF_UP)
+			.longValueExact()
+		;
+		return new Timestamp(longValue);
 	}
 
 	public static Timestamp getTimestampFromInteger(int value) {
