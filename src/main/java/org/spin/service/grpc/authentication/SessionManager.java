@@ -83,11 +83,37 @@ public class SessionManager {
 	/**	Logger			*/
 	private static CLogger log = CLogger.getCLogger(SessionManager.class);
 
-	private static int userId = -1;
-	private static int roleId = -1;
-	private static int organizationId = -1;
-	private static int warehouseId = -1;
-	private static String language = "en_US";
+	public static class SessionData {
+		public int sessionId = -1;
+		public String sessionUuid = "";
+		public int userId = -1;
+		public int roleId = -1;
+		public int organizationId = -1;
+		public int warehouseId = -1;
+		public String language = "en_US";
+
+		// Getters y Setters
+		public int getSessionId() { return sessionId; }
+		public void setSessionId(int sessionId) { this.sessionId = sessionId; }
+
+		public String getSessionUuid() { return sessionUuid; }
+		public void setSessionUuid(String sessionUuid) { this.sessionUuid = sessionUuid; }
+
+		public int getUserId() { return userId; }
+		public void setUserId(int userId) { this.userId = userId; }
+		
+		public int getRoleId() { return roleId; }
+		public void setRoleId(int roleId) { this.roleId = roleId; }
+		
+		public int getOrganizationId() { return organizationId; }
+		public void setOrganizationId(int organizationId) { this.organizationId = organizationId; }
+		
+		public int getWarehouseId() { return warehouseId; }
+		public void setWarehouseId(int warehouseId) { this.warehouseId = warehouseId; }
+		
+		public String getLanguage() { return language; }
+		public void setLanguage(String language) { this.language = language; }
+	}
 
 	/**	Language */
 	private static CCache<String, String> languageCache = new CCache<String, String>(I_AD_Language.Table_Name, 30, 0);	//	no time-out
@@ -107,16 +133,16 @@ public class SessionManager {
 	 * Get Default Country
 	 * @return
 	 */
-	public static MCountry getDefaultCountry() {
-		MClient client = MClient.get (Env.getCtx());
-		MLanguage language = MLanguage.get(Env.getCtx(), client.getAD_Language());
-		MCountry country = MCountry.get(Env.getCtx(), language.getCountryCode());
+	public static MCountry getDefaultCountry(Properties context) {
+		MClient client = MClient.get(context);
+		MLanguage language = MLanguage.get(client.getCtx(), client.getAD_Language());
+		MCountry country = MCountry.get(client.getCtx(), language.getCountryCode());
 		//	Verify
 		if(country != null) {
 			return country;
 		}
 		//	Default
-		return MCountry.getDefault(Env.getCtx());
+		return MCountry.getDefault(client.getCtx());
 	}
 	
 	/**
@@ -159,36 +185,36 @@ public class SessionManager {
 		return defaultLanguage;
 	}
 
-	public static void loadValuesWithClaims(Claims claimsPayload) {
+	public static void loadValuesWithClaims(Claims claimsPayload, SessionData sessionData) {
 		if (claimsPayload == null || claimsPayload.isEmpty()) {
 			throw new AdempiereException("Claims.Body @NotFound@");
 		}
-		SessionManager.userId = claimsPayload.get("AD_User_ID", Integer.class);
-		SessionManager.roleId = claimsPayload.get("AD_Role_ID", Integer.class);
-		SessionManager.organizationId = claimsPayload.get("AD_Org_ID", Integer.class);
-		SessionManager.warehouseId = claimsPayload.get("M_Warehouse_ID", Integer.class);
-		SessionManager.language = claimsPayload.get("AD_Language", String.class);
+		sessionData.userId = claimsPayload.get("AD_User_ID", Integer.class);
+		sessionData.roleId = claimsPayload.get("AD_Role_ID", Integer.class);
+		sessionData.organizationId = claimsPayload.get("AD_Org_ID", Integer.class);
+		sessionData.warehouseId = claimsPayload.get("M_Warehouse_ID", Integer.class);
+		sessionData.language = claimsPayload.get("AD_Language", String.class);
 	}
 
-	public static void loadValuesWithMADToken(MADToken token) {
+	public static void loadValuesWithMADToken(MADToken token, SessionData sessionData) {
 		if (token == null || token.getAD_Token_ID() <= 0) {
 			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
 		}
-		SessionManager.userId = token.getAD_User_ID();
-		SessionManager.roleId = token.getAD_Role_ID();
-		SessionManager.organizationId = token.getAD_Org_ID();
+		sessionData.userId = token.getAD_User_ID();
+		sessionData.roleId = token.getAD_Role_ID();
+		sessionData.organizationId = token.getAD_Org_ID();
 	}
 
-	public static void loadValuesWithOpenID(MSession session) {
+	public static void loadValuesWithOpenID(MSession session, SessionData sessionData) {
 		if (session == null || session.getAD_Session_ID() <= 0) {
 			throw new AdempiereException("@AD_Session_ID@ @NotFound@");
 		}
 		Properties context = session.getCtx();
-		SessionManager.userId = session.getCreatedBy();
-		SessionManager.roleId = session.getAD_Role_ID();
-		SessionManager.organizationId = session.getAD_Org_ID();
-		SessionManager.warehouseId = Env.getContextAsInt(context, "M_Warehouse_ID");
-		SessionManager.language = Env.getAD_Language(context);
+		sessionData.userId = session.getCreatedBy();
+		sessionData.roleId = session.getAD_Role_ID();
+		sessionData.organizationId = session.getAD_Org_ID();
+		sessionData.warehouseId = Env.getContextAsInt(context, "M_Warehouse_ID");
+		sessionData.language = Env.getAD_Language(context);
 	}
 
 	public static int getSessionIdByOpenID(String bearerToken) {
@@ -237,6 +263,7 @@ public class SessionManager {
 
 		boolean isNewSession = false;
 		int sessionId = getSessionIdByOpenID(tokenValue);
+		SessionData sessionData = new SessionData();
 		if (sessionId <= 0) {
 			SecretKey secretKey = getJWT_SecretKey();
 			//	Validate if is token based
@@ -250,45 +277,49 @@ public class SessionManager {
 			);
 			if (sessionId > 0) {
 				loadValuesWithClaims(
-					claims.getPayload()
+					claims.getPayload(),
+					sessionData
 				);
 			} else {
 				MADToken token = createSessionFromToken(tokenValue);
 				if(Optional.ofNullable(token).isPresent()) {
-					loadValuesWithMADToken(token);
+					loadValuesWithMADToken(
+						token,
+						sessionData
+					);
 					isNewSession = true;
 				}
 			}
 		} else {
 			loadValuesWithOpenID(
-				new MSession(Env.getCtx(), sessionId, null)
+				new MSession(Env.getCtx(), sessionId, null),
+				sessionData
 			);
 		}
 		//	Get Values from role
-		if(SessionManager.roleId < 0) {
+		if(sessionData.roleId < 0) {
 			throw new AdempiereException("@AD_Role_ID@ @NotFound@");
 		}
 		//	
-		if(SessionManager.organizationId < 0) {
-			SessionManager.organizationId = 0;
+		if(sessionData.organizationId < 0) {
+			sessionData.organizationId = 0;
 		}
-		if(SessionManager.warehouseId < 0) {
-			SessionManager.warehouseId = 0;
+		if(sessionData.warehouseId < 0) {
+			sessionData.warehouseId = 0;
 		}
 
 		Properties context = (Properties) Env.getCtx().clone();
 		DB.validateSupportedUUIDFromDB();
 
 		Env.setContext (context, "#Date", TimeUtil.getDay(System.currentTimeMillis()));
-		MRole role = MRole.get(context, SessionManager.roleId);
-		//	Warehouse / Org
-		Env.setContext(context, "#M_Warehouse_ID", SessionManager.warehouseId);
+		MRole role = MRole.get(context, sessionData.roleId);
+		//	Client / Org / Warehouse
 		Env.setContext(context, "#AD_Client_ID", role.getAD_Client_ID());
-		Env.setContext(context, "#AD_Org_ID", SessionManager.organizationId);
-		//	Role Info
-		Env.setContext(context, "#AD_Role_ID", SessionManager.roleId);
-		//	User Info
-		Env.setContext(context, "#AD_User_ID", SessionManager.userId);
+		Env.setContext(context, "#AD_Org_ID", sessionData.organizationId);
+		Env.setContext(context, "#M_Warehouse_ID", sessionData.warehouseId);
+		//	Role / User Info
+		Env.setContext(context, "#AD_Role_ID", sessionData.roleId);
+		Env.setContext(context, "#AD_User_ID", sessionData.userId);
 		//	
 		if (!isNewSession) {
 			Env.setContext (context, "#AD_Session_ID", sessionId);
@@ -298,15 +329,20 @@ public class SessionManager {
 			throw new AdempiereException("@AD_Session_ID@ @NotFound@");
 		}
 		//	Load preferences
-		loadDefaultSessionValues(context, SessionManager.language);
+		loadDefaultSessionValues(context, sessionData.language);
 		Env.setContext(context, "#AD_Session_ID", session.getAD_Session_ID());
 		Env.setContext(context, "#Session_UUID", session.getUUID());
 		Env.setContext(context, "#AD_User_ID", session.getCreatedBy());
 		Env.setContext(context, "#AD_Role_ID", session.getAD_Role_ID());
 		Env.setContext(context, "#AD_Client_ID", session.getAD_Client_ID());
 		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
-		setDefault(context, Env.getAD_Org_ID(context), SessionManager.organizationId, SessionManager.warehouseId);
-		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(language));
+		setDefault(
+			context,
+			Env.getAD_Org_ID(context),
+			sessionData.organizationId,
+			sessionData.warehouseId
+		);
+		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(sessionData.language));
 		return context;
 	}
 
@@ -496,7 +532,7 @@ public class SessionManager {
 		if(value == null) {
 			String sessionTimeoutAsString = MSysConfig.getValue(
 				"WEBUI_DEFAULT_TIMEOUT",
-				Env.getAD_Client_ID(Env.getCtx()),
+				Env.getAD_Client_ID(user.getCtx()),
 				0
 			);
 			sessionTimeout = NumberManager.getIntFromString(
@@ -807,10 +843,10 @@ public class SessionManager {
 			rs.close();
 			pstmt.close();
 			/**Define AcctSchema , Currency, HasAlias for Multi AcctSchema**/
-			MAcctSchema[] ass = MAcctSchema.getClientAcctSchema(Env.getCtx(), clientId);
+			MAcctSchema[] ass = MAcctSchema.getClientAcctSchema(context, clientId);
 			if(ass != null && ass.length > 1) {
 				for(MAcctSchema as : ass) {
-					acctSchemaId = MClientInfo.get(Env.getCtx(), clientId).getC_AcctSchema1_ID();
+					acctSchemaId = MClientInfo.get(context, clientId).getC_AcctSchema1_ID();
 					if (as.getAD_OrgOnly_ID() > 0) {
 						if (as.isSkipOrg(orgId)) {
 							continue;
@@ -907,7 +943,7 @@ public class SessionManager {
 			DB.close(rs, pstmt);
 		}
 		//	Country
-		MCountry country = getDefaultCountry();
+		MCountry country = getDefaultCountry(context);
 		if(country != null && country.getC_Country_ID() > 0) {
 			Env.setContext(context, "#C_Country_ID", country.getC_Country_ID());
 		}
