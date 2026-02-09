@@ -578,6 +578,7 @@ public class ValueManager {
 	public static String getDisplayedValueFromReference(Object value, String columnName, int displayTypeId, int referenceValueId) {
 		return getDisplayedValueFromReference(
 			Env.getCtx(),
+			value,
 			columnName,
 			displayTypeId,
 			referenceValueId
@@ -593,6 +594,12 @@ public class ValueManager {
 		}
 		if (context == null) {
 			context = Env.getCtx();
+		}
+		if (value instanceof Value) {
+			value = getObjectFromProtoValue(
+				(Value) value,
+				displayTypeId
+			);
 		}
 		if (DisplayType.isText(displayTypeId)) {
 			;
