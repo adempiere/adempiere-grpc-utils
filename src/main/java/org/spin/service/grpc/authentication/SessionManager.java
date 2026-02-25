@@ -15,21 +15,12 @@
  *************************************************************************************/
 package org.spin.service.grpc.authentication;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.logging.Level;
-
-import javax.crypto.SecretKey;
-
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.adempiere.core.domains.models.I_AD_Language;
 import org.adempiere.core.domains.models.I_AD_Session;
 import org.adempiere.core.domains.models.I_AD_User_Authentication;
@@ -67,12 +58,19 @@ import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.logging.Level;
 
 /**
  * Class for handle Session for Third Party Access
@@ -751,7 +749,7 @@ public class SessionManager {
 					+ ")"
 				+ ") "
 				+ "AND ROWNUM = 1 "
-			+ "ORDER BY o.Name ";
+			+ "ORDER BY o.AD_Client_ID DESC, o.Name ";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
 	}
 	
@@ -766,14 +764,34 @@ public class SessionManager {
 		}
 		final String warehouseSQL = "SELECT M_Warehouse_ID "
 			+ "FROM M_Warehouse "
-			+ "WHERE IsActive = 'Y' "
+			+ "WHERE "
+				+ "IsActive = 'Y' "
 				+ "AND AD_Org_ID = ? "
 				+ "AND IsInTransit = 'N' "
 				+ "AND ROWNUM = 1 "
-			+ "ORDER BY Name "
+			+ "ORDER BY AD_Client_ID DESC, Name "
 		;
 		return DB.getSQLValue(null, warehouseSQL, organizationId);
 	}
+
+	/**
+	 * Verify if the warehouse is active and belongs to the organization
+	 * @param organizationId
+	 * @param warehouseId
+	 * @return
+	 */
+	public static boolean isWarehouseAccess(int organizationId, int warehouseId) {
+		final String warehouseAccessSQL = "SELECT 1 "
+			+ "FROM M_Warehouse "
+			+ "WHERE "
+				+ "IsActive = 'Y' "
+				+ "AND IsInTransit = 'N' "
+				+ "AND AD_Org_ID = ? "
+				+ "AND M_Warehouse_ID = ? "
+		;
+		return DB.getSQLValue(null, warehouseAccessSQL, organizationId, warehouseId) > 0;
+	}
+
 
 	/**
 	 *	Load Preferences into Context for selected client.
