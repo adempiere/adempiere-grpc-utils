@@ -27,7 +27,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
@@ -171,8 +170,16 @@ public class TimeManager {
 		if(stringValue.length() == TIME_FORMAT.length()) {
 			format = TIME_FORMAT;
 		} else if (stringValue.length() == TIMEZONE_FORMAT.length()){
-			try{
-				return getTimestampFromInstant(stringValue);
+			try {
+				// Parse date/time components without timezone conversion
+				// to avoid date shifting when JVM timezone differs from UTC.
+				// e.g. "2025-01-25T00:00:00.000Z" -> "2025-01-25 00:00:00"
+				String dateTimePart = stringValue.substring(0, 19).replace('T', ' ');
+				SimpleDateFormat dateConverter = new SimpleDateFormat(TIME_FORMAT);
+				Date validDate = dateConverter.parse(dateTimePart);
+				return getTimestampFromLong(
+					validDate.getTime()
+				);
 			} catch (Exception e) {
 				//
 			}
@@ -224,7 +231,7 @@ public class TimeManager {
 			pattern = TIME_FORMAT;
 		}
 		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
-		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+		// simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String timeString = simpleDateFormat.format(date);
 		return timeString;
 	}
