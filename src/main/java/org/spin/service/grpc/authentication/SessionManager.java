@@ -751,7 +751,7 @@ public class SessionManager {
 					+ ")"
 				+ ") "
 				+ "AND ROWNUM = 1 "
-			+ "ORDER BY o.Name ";
+			+ "ORDER BY o.AD_Client_ID DESC, o.Name ";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
 	}
 	
@@ -766,14 +766,34 @@ public class SessionManager {
 		}
 		final String warehouseSQL = "SELECT M_Warehouse_ID "
 			+ "FROM M_Warehouse "
-			+ "WHERE IsActive = 'Y' "
+			+ "WHERE "
+				+ "IsActive = 'Y' "
 				+ "AND AD_Org_ID = ? "
 				+ "AND IsInTransit = 'N' "
 				+ "AND ROWNUM = 1 "
-			+ "ORDER BY Name "
+			+ "ORDER BY AD_Client_ID DESC, Name "
 		;
 		return DB.getSQLValue(null, warehouseSQL, organizationId);
 	}
+
+	/**
+	 * Verify if the warehouse is active and belongs to the organization
+	 * @param organizationId
+	 * @param warehouseId
+	 * @return
+	 */
+	public static boolean isWarehouseAccess(int organizationId, int warehouseId) {
+		final String warehouseAccessSQL = "SELECT 1 "
+			+ "FROM M_Warehouse "
+			+ "WHERE "
+				+ "IsActive = 'Y' "
+				+ "AND IsInTransit = 'N' "
+				+ "AND AD_Org_ID = ? "
+				+ "AND M_Warehouse_ID = ? "
+		;
+		return DB.getSQLValue(null, warehouseAccessSQL, organizationId, warehouseId) > 0;
+	}
+
 
 	/**
 	 *	Load Preferences into Context for selected client.
