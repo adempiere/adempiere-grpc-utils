@@ -141,11 +141,10 @@ public class CollectionManager {
 		if (values == null || values.size() <= 0) {
 			return convertedValues;
 		}
-		values.keySet().forEach(keyValue -> {
-			Value valueBuilder = values.get(keyValue);
-			Object valueItem = ValueManager.getObjectFromProtoValue(valueBuilder);
+		values.forEach((keyItem, protoValueItem) -> {
+			Object valueItem = ValueManager.getObjectFromProtoValue(protoValueItem);
 			convertedValues.put(
-				keyValue,
+				keyItem,
 				valueItem
 			);
 		});
@@ -169,20 +168,19 @@ public class CollectionManager {
 				values
 			);
 		}
-		values.keySet().forEach(keyValue -> {
-			Value valueBuilder = values.get(keyValue);
-			Object valueItem = ValueManager.getObjectFromProtoValue(valueBuilder);
+		values.forEach((keyItem, protoValueItem) -> {
+			Object valueItem = ValueManager.getObjectFromProtoValue(protoValueItem);
 
-			Integer displayType = displayTypeColumns.get(keyValue);
+			Integer displayType = displayTypeColumns.get(keyItem);
 			if (displayType != null && displayType.intValue() > 0) {
 				valueItem = ValueManager.getObjectFromProtoValue(
-					valueBuilder,
+					protoValueItem,
 					displayType.intValue()
 				);
 			}
 
 			convertedValues.put(
-				keyValue,
+				keyItem,
 				valueItem
 			);
 		});
