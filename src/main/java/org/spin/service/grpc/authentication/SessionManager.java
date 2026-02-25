@@ -15,12 +15,21 @@
  *************************************************************************************/
 package org.spin.service.grpc.authentication;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.logging.Level;
+
+import javax.crypto.SecretKey;
+
 import org.adempiere.core.domains.models.I_AD_Language;
 import org.adempiere.core.domains.models.I_AD_Session;
 import org.adempiere.core.domains.models.I_AD_User_Authentication;
@@ -58,19 +67,12 @@ import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
 
-import javax.crypto.SecretKey;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.logging.Level;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 /**
  * Class for handle Session for Third Party Access
