@@ -295,6 +295,7 @@ public class TimeManager {
 	 * Convert Timestamp to String
 	 * @param date
 	 * @param displayTypeId
+	 * @param language
 	 * @return
 	 */
 	public static String getDisplayValue(Object value, int displayTypeId, Language language) {

@@ -263,7 +263,7 @@ public class BooleanManager {
 	/**
 	 * Get translated display value from String with specific language
 	 * @param value
-	 * @param language AD_Language
+	 * @param language Language
 	 * @return translated "Yes" / "No"
 	 */
 	public static String getDisplayValue(String value, Language language) {
