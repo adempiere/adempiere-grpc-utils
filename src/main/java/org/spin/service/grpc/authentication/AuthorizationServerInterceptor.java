@@ -30,6 +30,8 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
 
 	/**	Threaded key for context management	*/
 	public static final Context.Key<Object> SESSION_CONTEXT = Context.key("session_context");
+	/**	Original token (without Bearer prefix) for downstream services	*/
+	public static final Context.Key<String> ORIGINAL_TOKEN = Context.key("original_token");
 
 	/** Services/Methods allow request without Bearer token validation */
 	private List<String> ALLOW_REQUESTS_WITHOUT_TOKEN = new ArrayList<String>();
@@ -83,11 +85,26 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
             status = Status.UNAUTHENTICATED.withDescription("Unknown authorization type");
         } else {
             try {
-            	Properties sessioncontext = SessionManager.getSessionFromToken(validToken);
-				if(this.REVOKE_TOKEN_SERVICES.contains(callingMethod)) {
-					SessionManager.revokeSession(validToken);
+				// Detect token type: LOCAL (ADempiere HMAC) vs KEYCLOAK (pre-validated by nginx)
+				String tokenWithoutBearer = TokenManager.getTokenWithoutType(validToken);
+				TokenTypeDetector.TokenType tokenType = TokenTypeDetector.detect(tokenWithoutBearer);
+
+				Properties sessioncontext;
+				if (tokenType == TokenTypeDetector.TokenType.KEYCLOAK) {
+					// Keycloak: decode JWT claims and resolve ADempiere session
+					sessioncontext = KeycloakSessionHandler.resolveSession(tokenWithoutBearer);
+				} else {
+					// Local: validate JWT signature with HMAC secret key
+					sessioncontext = SessionManager.getSessionFromToken(validToken);
+					// Revoke session only for local tokens (Keycloak sessions are managed externally)
+					if (this.REVOKE_TOKEN_SERVICES.contains(callingMethod)) {
+						SessionManager.revokeSession(validToken);
+					}
 				}
-            	Context context = Context.current().withValue(SESSION_CONTEXT, sessioncontext);
+
+            	Context context = Context.current()
+					.withValue(SESSION_CONTEXT, sessioncontext)
+					.withValue(ORIGINAL_TOKEN, tokenWithoutBearer);
                 return Contexts.interceptCall(context, serverCall, metadata, serverCallHandler);
             } catch (Exception e) {
                 status = Status.UNAUTHENTICATED.withDescription(e.getMessage()).withCause(e);
