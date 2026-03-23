@@ -46,11 +46,24 @@ public class TextManager {
 	 * @return
 	 */
 	public static String getStringFromObject(Object value) {
+		String textValue = null;
 		if (value == null) {
-			return null;
+			return textValue;
 		}
-		// return (String) value;
-		return value.toString();
+		if (value instanceof Value) {
+			textValue = TextManager.getStringFromProtoValue(
+				(Value) value
+			);
+		} else if (value instanceof Value.Builder) {
+			Value newValue = ((Value.Builder) value).build();
+			textValue = TextManager.getStringFromProtoValue(
+				newValue
+			);
+		} else {
+			// textValue = (String) value;
+			textValue = value.toString();
+		}
+		return textValue;
 	}
 
 

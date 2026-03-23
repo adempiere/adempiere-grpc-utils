@@ -16,6 +16,7 @@
 package org.spin.service.grpc.util.value;
 
 import org.compiere.util.Env;
+import org.compiere.util.Language;
 import org.compiere.util.Msg;
 import org.compiere.util.Util;
 
@@ -92,6 +93,15 @@ public class BooleanManager {
 			booleanValue = BooleanManager.getBooleanFromInteger(
 				(Integer) value
 			);
+		} else if (value instanceof Value) {
+			booleanValue = BooleanManager.getBooleanFromProtoValue(
+				(Value) value
+			);
+		} else if (value instanceof Value.Builder) {
+			Value newValue = ((Value.Builder) value).build();
+			booleanValue = BooleanManager.getBooleanFromProtoValue(
+				newValue
+			);
 		}
 		return booleanValue;
 	}
@@ -141,27 +151,122 @@ public class BooleanManager {
 		return convertedValue;
 	}
 
+	/**
+	 * @deprecated Use {@link BooleanManager#getDisplayValue(boolean)} instead
+	 */
+	@Deprecated
 	public static String getBooleanToTranslated(boolean value) {
-		return getBooleanToTranslated(
+		return getDisplayValue(value);
+	}
+	/**
+	 * @deprecated Use {@link BooleanManager#getDisplayValue(boolean, String)} instead
+	 */
+	@Deprecated
+	public static String getBooleanToTranslated(boolean value, String language) {
+		return getDisplayValue(value, language);
+	}
+
+	/**
+	 * @deprecated Use {@link BooleanManager#getDisplayValue(String)} instead
+	 */
+	@Deprecated
+	public static String getBooleanToTranslated(String value) {
+		return getDisplayValue(value);
+	}
+	/**
+	 * @deprecated Use {@link BooleanManager#getDisplayValue(String, String)} instead
+	 */
+	@Deprecated
+	public static String getBooleanToTranslated(String value, String language) {
+		return getDisplayValue(value, language);
+	}
+
+
+	/**
+	 * Get translated display value from boolean
+	 * @param value
+	 * @return translated "Yes" / "No" based on login language
+	 */
+	public static String getDisplayValue(Object value) {
+		boolean bool = false;
+		if (value != null) {
+			bool = BooleanManager.getBooleanFromObject(value);
+		}
+		return getDisplayValue(
+			bool,
+			Env.getAD_Language(Env.getCtx())
+		);
+	}
+	/**
+	 * Get translated display value from boolean
+	 * @param value
+	 * @return translated "Yes" / "No" based on login language
+	 */
+	public static String getDisplayValue(Boolean value) {
+		boolean bool = false;
+		if (value != null) {
+			bool = value.booleanValue();
+		}
+		return getDisplayValue(
+			bool,
+			Env.getAD_Language(Env.getCtx())
+		);
+	}
+	/**
+	 * Get translated display value from boolean
+	 * @param value
+	 * @return translated "Yes" / "No" based on login language
+	 */
+	public static String getDisplayValue(boolean value) {
+		return getDisplayValue(
 			value,
 			Env.getAD_Language(Env.getCtx())
 		);
 	}
-	public static String getBooleanToTranslated(boolean value, String language) {
+	/**
+	 * Get translated display value from boolean with specific language
+	 * @param value
+	 * @param language AD_Language
+	 * @return translated "Yes" / "No"
+	 */
+	public static String getDisplayValue(boolean value, String language) {
 		return Msg.getMsg(
 			language,
 			getBooleanToString(value)
 		);
 	}
 
-	public static String getBooleanToTranslated(String value) {
-		String acceptedValue = getBooleanToString(value);
-		return getBooleanToTranslated(
-			acceptedValue,
+	/**
+	 * Get translated display value from String ("Y"/"N", "Yes"/"No", "true"/"false")
+	 * @param value
+	 * @return translated "Yes" / "No" based on login language
+	 */
+	public static String getDisplayValue(String value) {
+		return getDisplayValue(
+			value,
 			Env.getAD_Language(Env.getCtx())
 		);
 	}
-	public static String getBooleanToTranslated(String value, String language) {
+	/**
+	 * Get translated display value from String with specific language
+	 * @param value
+	 * @param language AD_Language
+	 * @return translated "Yes" / "No"
+	 */
+	public static String getDisplayValue(String value, String language) {
+		String acceptedValue = getBooleanToString(value);
+		return Msg.getMsg(
+			language,
+			acceptedValue
+		);
+	}
+	/**
+	 * Get translated display value from String with specific language
+	 * @param value
+	 * @param language AD_Language
+	 * @return translated "Yes" / "No"
+	 */
+	public static String getDisplayValue(String value, Language language) {
 		String acceptedValue = getBooleanToString(value);
 		return Msg.getMsg(
 			language,
