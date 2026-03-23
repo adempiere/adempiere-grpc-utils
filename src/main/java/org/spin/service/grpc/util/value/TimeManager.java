@@ -15,6 +15,14 @@
 
 package org.spin.service.grpc.util.value;
 
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
+import org.compiere.util.DisplayType;
+import org.compiere.util.Env;
+import org.compiere.util.Language;
+import org.compiere.util.TimeUtil;
+import org.compiere.util.Util;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
@@ -27,14 +35,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
-
-import org.compiere.util.DisplayType;
-import org.compiere.util.Env;
-import org.compiere.util.TimeUtil;
-import org.compiere.util.Util;
-
-import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
 
 /**
  * Class for handle Time (TimesTamp, Date, Long, Instant) values
@@ -151,6 +151,15 @@ public class TimeManager {
 			dateValue = TimeManager.getTimestampFromNumber(
 				(Number) value
 			);
+		} else if (value instanceof Value) {
+			dateValue = TimeManager.getTimestampFromProtoValue(
+				(Value) value
+			);
+		} else if (value instanceof Value.Builder) {
+			Value newValue = ((Value.Builder) value).build();
+			dateValue = TimeManager.getTimestampFromProtoValue(
+				newValue
+			);
 		}
 		return dateValue;
 	}
@@ -207,15 +216,37 @@ public class TimeManager {
 	}
 
 	/**
+	 * @deprecated Use {@link TimeManager#getDisplayValue(Timestamp)} instead.
 	 * Convert Timestamp to String
 	 * @param date
 	 * @return
 	 */
+	@Deprecated
 	public static String getTimestampToString(Timestamp date) {
+		return getDisplayValue(date,TIME_FORMAT);
+	}
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @return
+	 */
+	public static String getDisplayValue(Timestamp date) {
 		if(date == null) {
 			return null;
 		}
-		return getTimestampToString(date, TIME_FORMAT);
+		// TODO: Consider language and date format settings
+		return getDisplayValue(date, TIME_FORMAT);
+	}
+	/**
+	 * @deprecated Use {@link TimeManager#getDisplayValue(Timestamp,String)} instead.
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param pattern default `yyyy-MM-dd hh:mm:ss`
+	 * @return
+	 */
+	@Deprecated
+	public static String getTimestampToString(Timestamp date, String pattern) {
+		return getDisplayValue(date, pattern);
 	}
 	/**
 	 * Convert Timestamp to String
@@ -223,7 +254,7 @@ public class TimeManager {
 	 * @param pattern default `yyyy-MM-dd hh:mm:ss`
 	 * @return
 	 */
-	public static String getTimestampToString(Timestamp date, String pattern) {
+	public static String getDisplayValue(Timestamp date, String pattern) {
 		if(date == null) {
 			return null;
 		}
@@ -234,6 +265,109 @@ public class TimeManager {
 		// simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String timeString = simpleDateFormat.format(date);
 		return timeString;
+	}
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param displayTypeId
+	 * @return
+	 */
+	public static String getDisplayValue(Timestamp date, int displayTypeId) {
+		if(date == null) {
+			return null;
+		}
+		return getDisplayValue(date, displayTypeId, null);
+	}
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param displayTypeId
+	 * @return
+	 */
+	public static String getDisplayValue(Object value, int displayTypeId) {
+		Timestamp date = TimeManager.getTimestampFromObject(value);
+		if(date == null) {
+			return null;
+		}
+		return getDisplayValue(date, displayTypeId, null);
+	}
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param displayTypeId
+	 * @param language
+	 * @return
+	 */
+	public static String getDisplayValue(Object value, int displayTypeId, Language language) {
+		Timestamp date = TimeManager.getTimestampFromObject(value);
+		if(date == null) {
+			return null;
+		}
+		return getDisplayValue(date, displayTypeId, language);
+	}
+	/**
+	 * Convert Timestamp to String
+	 * @param date
+	 * @param displayTypeId
+	 * @param language
+	 * @return
+	 */
+	public static String getDisplayValue(Timestamp date, int displayTypeId, Language language) {
+		return getDisplayValue(date, displayTypeId, language, null);
+	}
+	/**
+	 * Get display value formatted as Date only (DisplayType.Date)
+	 * @param date
+	 * @return formatted date string (e.g. "13/03/2026")
+	 */
+	public static String getDateDisplayValue(Timestamp date) {
+		return getDisplayValue(date, DisplayType.Date);
+	}
+	/**
+	 * Get display value formatted as Time only (DisplayType.Time)
+	 * @param date
+	 * @return formatted time string (e.g. "14:30:45")
+	 */
+	public static String getTimeDisplayValue(Timestamp date) {
+		return getDisplayValue(date, DisplayType.Time);
+	}
+	/**
+	 * Get display value formatted as DateTime (DisplayType.DateTime)
+	 * @param date
+	 * @return formatted date time string (e.g. "13/03/2026 14:30:45")
+	 */
+	public static String getDateTimeDisplayValue(Timestamp date) {
+		return getDisplayValue(date, DisplayType.DateTime);
+	}
+
+	/**
+	 * Convert Timestamp to String based on DisplayType, Language and format pattern
+	 * @param date
+	 * @param displayTypeId reference display type (Date, DateTime, Time)
+	 * @param language
+	 * @param formatPattern optional format pattern
+	 * @return
+	 */
+	public static String getDisplayValue(Timestamp date, int displayTypeId, Language language, String formatPattern) {
+		if(date == null) {
+			return null;
+		}
+		if (!DisplayType.isDate(displayTypeId)) {
+			return getDisplayValue(date, DATE_FORMAT);
+		}
+		if (language == null) {
+			language = Language.getLoginLanguage();
+		}
+		SimpleDateFormat simpleDateFormat = DisplayType.getDateFormat(
+			displayTypeId,
+			language,
+			formatPattern
+		);
+		String format = simpleDateFormat.toPattern();
+		if (Util.isEmpty(format, true)) {
+			format = TIME_FORMAT;
+		}
+		return getDisplayValue(date, format);
 	}
 
 	/**

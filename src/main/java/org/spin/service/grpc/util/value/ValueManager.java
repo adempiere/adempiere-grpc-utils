@@ -17,8 +17,6 @@ package org.spin.service.grpc.util.value;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -70,6 +68,12 @@ public class ValueManager {
 		if(value == null) {
 			return getProtoValueFromNull();
 		}
+		// if (value instanceof Value) {
+		// 	builder.mergeFrom((Value) value);
+		// 	return builder;
+		// } else if (value instanceof Value.Builder) {
+		// 	return (Value.Builder) value;
+		// }
 		//	Validate value
 		if(value instanceof BigDecimal) {
 			// TODO: Add support to `Float` and `Double`
@@ -509,6 +513,12 @@ public class ValueManager {
 			// getEmptyValueByReference(displayTypeId);
 			return getProtoValueFromNull();
 		}
+		// if (value instanceof Value) {
+		// 	builderValue.mergeFrom((Value) value);
+		// 	return builderValue;
+		// } else if (value instanceof Value.Builder) {
+		// 	return (Value.Builder) value;
+		// }
 		if (displayTypeId <= 0) {
 			return getProtoValueFromObject(value);
 		}
@@ -613,19 +623,14 @@ public class ValueManager {
 			;
 		} else if (displayTypeId == DisplayType.YesNo) {
 			String language = Env.getAD_Language(context);
-			displayedValue = BooleanManager.getBooleanToTranslated(
+			displayedValue = BooleanManager.getDisplayValue(
 				value.toString(),
 				language
 			);
 		} else if (displayTypeId == DisplayType.Integer) {
-			// necessary condition do not to enter the condition for decimal struct
-			Language language = Env.getLanguage(context);
-			DecimalFormat intFormat = DisplayType.getNumberFormat(
-				DisplayType.Integer,
-				language
-			);
-			displayedValue = intFormat.format(
-				Integer.valueOf(value.toString())
+			displayedValue = NumberManager.getDisplayValue(
+				value,
+				displayTypeId
 			);
 		} else if (DisplayType.isNumeric(displayTypeId)) {
 			if (I_C_Order.COLUMNNAME_ProcessedOn.equals(columnName)) {
@@ -634,30 +639,18 @@ public class ValueManager {
 					timeValue
 				);
 			} else {
-				Language language = Env.getLanguage(context);
-				DecimalFormat numberFormat = DisplayType.getNumberFormat(
-					displayTypeId,
-					language
-				);
-				displayedValue = numberFormat.format(
-					NumberManager.getBigDecimalFromString(
-						value.toString()
-					)
+				displayedValue = NumberManager.getDisplayValue(
+					displayedValue,
+					displayTypeId
 				);
 			}
 		} else if (DisplayType.isDate(displayTypeId)) {
 			Language language = Env.getLanguage(context);
-			SimpleDateFormat dateTimeFormat = DisplayType.getDateFormat(
-				DisplayType.DateTime,
-				// displayTypeId,
+			displayedValue = TimeManager.getDisplayValue(
+				value,
+				displayTypeId,
 				language
 			);
-			Timestamp dateValue = TimeManager.getTimestampFromObject(value);
-			if (dateValue != null) {
-				displayedValue = dateTimeFormat.format(
-					dateValue
-				);
-			}
 		} else if (DisplayType.isLookup(displayTypeId) && displayTypeId != DisplayType.List) {
 			Language language = Env.getLanguage(context);
 			MLookupInfo lookupInfo = MLookupFactory.getLookupInfo(
@@ -687,8 +680,8 @@ public class ValueManager {
 					}
 				}
 			} else if (BooleanManager.isBoolean(value)) {
-				String language = Env.getAD_Language(context);
-				displayedValue = BooleanManager.getBooleanToTranslated(
+				Language language = Env.getLanguage(context);
+				displayedValue = BooleanManager.getDisplayValue(
 					value.toString(),
 					language
 				);
